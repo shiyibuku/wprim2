@@ -1,0 +1,19 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<jsp:include page="/include/journalhome.jsp"></jsp:include>
+<div id="right">
+    <div class="r_top"></div>
+      <div class="r_main">
+       <div style="margin-bottom: 5px;">WPRIM &gt;
+          <a href="index.jsp">Home</a>&gt;
+          <span> Journal Create</span>
+        </div>
+    	
+    </div>
+   	<div class="r_bot"></div>
+  </div>
+  </div>
+  <div class="footer">
+  <div class="copyright"> ©2012 Regional Journal Selection Committee, WHO West Pacific Region Office. All right reserved. </div>
+</div>
+  </body>
+</html>

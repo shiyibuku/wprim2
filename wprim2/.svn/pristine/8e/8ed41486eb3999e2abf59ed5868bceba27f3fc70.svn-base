@@ -1,0 +1,13 @@
+package com.ninemax.test;
+
+import com.ninemax.util.Role_ActionStatus;
+
+public class Test {
+
+	public static void main(String[] args) {
+		Role_ActionStatus foo = Role_ActionStatus.NationalLiaisoner;
+		for(String str : foo.getRoleActionStatus()){
+			System.out.println(str);
+		}
+	}
+}

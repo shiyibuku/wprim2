@@ -1,0 +1,17 @@
+package com.ninemax.service;
+
+import com.jfinal.plugin.activerecord.Record;
+
+public interface IJournalService {
+	//查询
+	Record findAll();
+	//新增
+	void save();
+	//查询某一个
+	Record queryJournal(String id);
+	//更新
+	void update();
+	//删除
+	void delete(String id);
+	
+}

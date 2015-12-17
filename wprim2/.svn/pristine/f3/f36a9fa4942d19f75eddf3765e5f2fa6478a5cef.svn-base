@@ -1,0 +1,504 @@
+package com.ninemax.service.impl;
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
+import org.dom4j.Document;
+import org.dom4j.DocumentException;
+import org.dom4j.Element;
+import org.dom4j.io.SAXReader;
+
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Record;
+import com.jfinal.upload.UploadFile;
+import com.ninemax.service.IArticleService;
+import com.ninemax.util.ArticleConstant;
+import com.ninemax.util.ArticleUtil;
+import com.ninemax.util.RoleName;
+import com.ninemax.util.UserUtil;
+
+public class ArticleServiceImpl implements IArticleService {
+
+	@Override
+	public Object importXml(UploadFile xmlFile, Record curr_user) throws DocumentException {
+		//预处理数据
+		String userCountry = curr_user.getStr("Country");
+		String userEditDep = curr_user.getStr("EditDep");
+		//检查当前用户是否有导入期刊论文数据的权限
+		//系统管理员、期刊编辑部、国家数据管理员分别可以导入全部、本编辑部、本国的期刊论文数据
+		boolean isJudgeCountry = false;
+		boolean isJudgePublisherName = false;
+		if(!UserUtil.haveRole(curr_user, RoleName.SYSTEMADMINISTRATOR) && UserUtil.haveRole(curr_user, RoleName.NATIONALDATAMANAGER)){
+			isJudgeCountry = true;
+		}
+		if(!UserUtil.haveRole(curr_user, RoleName.SYSTEMADMINISTRATOR) && !UserUtil.haveRole(curr_user, RoleName.NATIONALDATAMANAGER) && UserUtil.haveRole(curr_user, RoleName.JOURNALEDITORIALDEPARTMENT)){
+			isJudgePublisherName = true;
+		}
+		List<String> roleNames = new ArrayList<String>();
+		roleNames.add(RoleName.SYSTEMADMINISTRATOR);
+		roleNames.add(RoleName.JOURNALEDITORIALDEPARTMENT);
+		roleNames.add(RoleName.NATIONALDATAMANAGER);
+		if(UserUtil.haveAnyOfRoles(curr_user, roleNames)){
+			//读取xml
+			SAXReader reader = new SAXReader();
+			Document document = reader.read(xmlFile.getFile());
+			Element root = document.getRootElement();
+			
+			//统计导入论文数目
+			int successCount = 0;
+			int totalCount = root.elements("Article").size();
+			
+			@SuppressWarnings("unchecked")
+			Iterator<Element> it = root.elementIterator("Article");
+			while(it.hasNext()){
+				Element article = it.next();
+				
+				//Journal节点期刊名录数据
+				Element journalOutside = article.element("Journal");
+				String country = journalOutside.elementText("Country");
+				String publisherName = journalOutside.elementText("PublisherName");
+				String journalTitle = journalOutside.elementText("JournalTitle");
+				String issn = journalOutside.elementText("Issn");
+				
+				Record journalTemp = Db.findFirst("select * from WSSJOURNAL where country = ? and publisher = ? and journalTitle = ? and ISSN = ?",country,publisherName,journalTitle,issn);
+				
+				//期刊数据
+				String volume = journalOutside.elementText("Volume");
+				String issue = journalOutside.elementText("issue");
+				Element pubDate = journalOutside.element("PubDate");
+				String year = pubDate.elementText("Year");
+				String month = pubDate.elementText("month");
+				String day = pubDate.elementText("day");
+				String pubDateFinal = year + "-" + month + "-" + day;
+				
+				Record journalVolume = null;
+				
+				//论文数据
+				String articleTitle = article.elementText("ArticleTitle");
+				String vernacularTitle = article.elementText("VernacularTitle");
+				String firstPage = article.elementText("FirstPage");
+				String lastPage = article.elementText("LastPage");
+				String language = article.elementText("Language");
+				@SuppressWarnings("unchecked")
+				List<Element> authorList = article.element("AuthorList").elements("Author");
+				String publicationType = article.elementText("PublicationType");
+				Element articleIdList = article.element("ArticleIdList");
+				String articleAbstract = article.elementText("Abstract");
+				@SuppressWarnings("unchecked")
+				List<Element> keywordsList = article.element("KeywordsList").elements("Keywords");
+				@SuppressWarnings("unchecked")
+				List<Element> meSHList = article.element("MeSHList").elements("MeSH");
+				
+				//只导入本期刊编辑部的数据
+				if(isJudgePublisherName){
+					if(country.equals(userCountry) && publisherName.equals(userEditDep)){
+						//生成xml论文数据唯一标识
+						String uniqueArticleCode = ArticleUtil.generateUniqueArticleCode(issn,year,volume,issue,firstPage,articleTitle);
+						
+						Record articleTemp = Db.findFirst("select * from WSSARTICLE where ARTICLEKEY = ?",uniqueArticleCode);
+						//论文数据不存在时创建
+						if(articleTemp == null){
+							//期刊名录不存在，则创建
+							if(journalTemp == null){
+								journalTemp = new Record().set("country", country).set("journalTitle", journalTitle).set("publisher", publisherName).set("ISSN", issn);
+								Db.save("WSSJOURNAL", "JournalId", journalTemp);
+								//创建期刊
+								journalVolume = new Record().set("Volume", volume).set("Issue", issue).set("PubYear", year).set("PubMonth", month).set("PubDay", day).set("JId", journalTemp.getInt("JournalId")).set("crtime", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date())).set("PubDate",pubDateFinal);
+								Db.save("WSSJOURNALVOLUME", "VolumeID",journalVolume);
+							}else{
+								Record journalVolumeTemp = Db.findFirst("select * from WSSJOURNALVOLUME where Volume = ? and Issue = ? and JID = ? and PubYear = ? and PubMonth = ? and PubDay = ?",volume,issue,journalTemp.getInt("JournalId"),year,month,day);
+								if(journalVolumeTemp == null){
+									//期刊名录存在，期刊不存在，则创建期刊
+									journalVolume = new Record().set("Volume", volume).set("Issue", issue).set("PubYear", year).set("PubMonth", month).set("PubDay", day).set("JId", journalTemp.getInt("JournalId")).set("crtime", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date())).set("PubDate",pubDateFinal);
+									Db.save("WSSJOURNALVOLUME", "VolumeID",journalVolume);
+								}else{
+									//期刊存在，则赋值给全局变量journalVolume
+									journalVolume = journalVolumeTemp;
+								}
+							}
+							
+							//处理部分论文数据，转换为可存储内容
+							//1.处理作者Author数据
+							String firstAuthor = "";
+							String firstNameFinal = "";
+							String middleNameFinal = "";
+							String lastNameFinal = "";
+							String affiliation = "";
+							String author = "";
+							for (int i = 0; i < authorList.size(); i++) {
+								Element authorElement = authorList.get(i);
+								String firstName = authorElement.elementText("FirstName");
+								String middleName = authorElement.elementText("MiddleName");
+								String lastName = authorElement.elementText("LastName");
+								String affiliationTemp = authorElement.elementText("Affiliation");
+								
+								//姓名组成部分连接符，各个作者中间连接符
+								String nameSeparator = ArticleConstant.EN_BAR;
+								String authorSeparator = ArticleConstant.EN_COLON;
+								
+								//设置FistAuthor和Affiliation
+								if(i == 0){
+									firstAuthor = firstName + " " + middleName + " " + lastName;
+									affiliation = affiliationTemp;
+									firstNameFinal = firstName;
+									middleNameFinal = middleName;
+									lastNameFinal = lastName;
+								}
+								
+								author += firstName + " " + middleName + " " + lastName + nameSeparator + affiliationTemp + (i == 0 ? "" : authorSeparator);
+							}
+							//2.处理ArticleId
+							String doi = "";
+							String url = "";
+							String articleId = "";
+							@SuppressWarnings("unchecked")
+							List<Element> articleIds = articleIdList.elements("ArticleId");
+							for(Element e : articleIds){
+								String articleIdAttribute = e.attributeValue("IdType");
+								String articleIdValue = e.getText();
+								doi = articleIdAttribute.equals("doi") ? articleIdValue : "";
+								url = articleIdAttribute.equals("url") ? articleIdValue : "";
+								articleId += articleIdValue;
+							}
+							//3.处理Keywords
+							String keywords = "";
+							int keywordsListSize = keywordsList.size();
+							if(keywordsList != null && keywordsListSize != 0){
+								for (int i = 0; i < keywordsListSize; i++) {
+									String keywordsValue = keywordsList.get(i).getText();
+									keywords += (i == 0) ? keywordsValue : (keywordsValue + ";");
+								}
+							}
+							//处理meSH
+							String meSH = "";
+							int meSHListSize = meSHList.size();
+							if(meSHList != null && meSHListSize != 0){
+								for (int i = 0; i < meSHListSize; i++) {
+									String meSHValue = meSHList.get(i).getText();
+									meSH += (i == 0) ? meSHValue : (meSHValue + ";");
+								}
+							}
+							
+							//导入论文数据
+							Record newArticle = new Record().set("ArticleTitle", articleTitle)
+									.set("VernacularTitle", vernacularTitle)
+									.set("FirstPage", firstPage)
+									.set("LastPage", lastPage)
+									.set("Language", language)
+									.set("PublicationType", publicationType)
+									.set("Abstract", articleAbstract)
+									.set("FirstAuthor", firstAuthor)
+									.set("Affiliation", affiliation)
+									.set("FirstName", firstNameFinal)
+									.set("MiddleName", middleNameFinal)
+									.set("LastName", lastNameFinal)
+									.set("Author", author)
+									.set("DOI", doi)
+									.set("URL", url)
+									.set("Keywords", keywords)
+									.set("MeSH", meSH)
+									.set("JID", journalTemp.getInt("JournalId"))
+									.set("VID", journalVolume.getInt("VolumeID"))
+									.set("FirstPage", firstPage)
+									.set("LastPage", lastPage)
+									.set("FirstName", firstNameFinal)
+									.set("MiddleName", middleNameFinal)
+									.set("LastName", lastNameFinal)
+									.set("Language", language)
+									.set("crtime", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date()))
+									.set("JournalTitle", journalTemp.get("journalTitle"))
+									.set("ISSN", issn)
+									.set("Volume", volume)
+									.set("Issue", issue)
+									.set("Country", country)
+									.set("PubYear", year)
+									.set("PubMonth", month)
+									.set("PubDay", day)
+									.set("PubDate", pubDateFinal)
+									.set("ArticleId", articleId);
+							Db.save("WSSARTICLE","WPRIMID", newArticle);
+						}
+						
+						successCount++;
+					}
+				//只导入本国的数据
+				}else if(isJudgeCountry){
+					if(country.equals(userCountry)){
+						//生成xml论文数据唯一标识
+						String uniqueArticleCode = ArticleUtil.generateUniqueArticleCode(issn,year,volume,issue,firstPage,articleTitle);
+						
+						Record articleTemp = Db.findFirst("select * from WSSARTICLE where ARTICLEKEY = ?",uniqueArticleCode);
+						//论文数据不存在时创建
+						if(articleTemp == null){
+							//期刊名录不存在，则创建
+							if(journalTemp == null){
+								journalTemp = new Record().set("country", country).set("journalTitle", journalTitle).set("publisher", publisherName).set("ISSN", issn);
+								Db.save("WSSJOURNAL", "JournalId", journalTemp);
+								//创建期刊
+								journalVolume = new Record().set("Volume", volume).set("Issue", issue).set("PubYear", year).set("PubMonth", month).set("PubDay", day).set("JId", journalTemp.getInt("JournalId")).set("crtime", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date())).set("PubDate",pubDateFinal);
+								Db.save("WSSJOURNALVOLUME", "VolumeID",journalVolume);
+							}else{
+								Record journalVolumeTemp = Db.findFirst("select * from WSSJOURNALVOLUME where Volume = ? and Issue = ? and JID = ? and PubYear = ? and PubMonth = ? and PubDay = ?",volume,issue,journalTemp.getInt("JournalId"),year,month,day);
+								if(journalVolumeTemp == null){
+									//期刊名录存在，期刊不存在，则创建期刊
+									journalVolume = new Record().set("Volume", volume).set("Issue", issue).set("PubYear", year).set("PubMonth", month).set("PubDay", day).set("JId", journalTemp.getInt("JournalId")).set("crtime", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date())).set("PubDate",pubDateFinal);
+									Db.save("WSSJOURNALVOLUME", "VolumeID",journalVolume);
+								}else{
+									//期刊存在，则赋值给全局变量journalVolume
+									journalVolume = journalVolumeTemp;
+								}
+							}
+							
+							//处理部分论文数据，转换为可存储内容
+							//1.处理作者Author数据
+							String firstAuthor = "";
+							String firstNameFinal = "";
+							String middleNameFinal = "";
+							String lastNameFinal = "";
+							String affiliation = "";
+							String author = "";
+							for (int i = 0; i < authorList.size(); i++) {
+								Element authorElement = authorList.get(i);
+								String firstName = authorElement.elementText("FirstName");
+								String middleName = authorElement.elementText("MiddleName");
+								String lastName = authorElement.elementText("LastName");
+								String affiliationTemp = authorElement.elementText("Affiliation");
+								
+								//姓名组成部分连接符，各个作者中间连接符
+								String nameSeparator = ArticleConstant.EN_BAR;
+								String authorSeparator = ArticleConstant.EN_COLON;
+								
+								//设置FistAuthor和Affiliation
+								if(i == 0){
+									firstAuthor = firstName + " " + middleName + " " + lastName;
+									affiliation = affiliationTemp;
+									firstNameFinal = firstName;
+									middleNameFinal = middleName;
+									lastNameFinal = lastName;
+								}
+								
+								author += firstName + " " + middleName + " " + lastName + nameSeparator + affiliationTemp + (i == 0 ? "" : authorSeparator);
+							}
+							//2.处理ArticleId
+							String doi = "";
+							String url = "";
+							String articleId = "";
+							@SuppressWarnings("unchecked")
+							List<Element> articleIds = articleIdList.elements("ArticleId");
+							for(Element e : articleIds){
+								String articleIdAttribute = e.attributeValue("IdType");
+								String articleIdValue = e.getText();
+								doi = articleIdAttribute.equals("doi") ? articleIdValue : "";
+								url = articleIdAttribute.equals("url") ? articleIdValue : "";
+								articleId += articleIdValue;
+							}
+							//3.处理Keywords
+							String keywords = "";
+							int keywordsListSize = keywordsList.size();
+							if(keywordsList != null && keywordsListSize != 0){
+								for (int i = 0; i < keywordsListSize; i++) {
+									String keywordsValue = keywordsList.get(i).getText();
+									keywords += (i == 0) ? keywordsValue : (keywordsValue + ";");
+								}
+							}
+							//处理meSH
+							String meSH = "";
+							int meSHListSize = meSHList.size();
+							if(meSHList != null && meSHListSize != 0){
+								for (int i = 0; i < meSHListSize; i++) {
+									String meSHValue = meSHList.get(i).getText();
+									meSH += (i == 0) ? meSHValue : (meSHValue + ";");
+								}
+							}
+							
+							//导入论文数据
+							Record newArticle = new Record().set("ArticleTitle", articleTitle)
+									.set("VernacularTitle", vernacularTitle)
+									.set("FirstPage", firstPage)
+									.set("LastPage", lastPage)
+									.set("Language", language)
+									.set("PublicationType", publicationType)
+									.set("Abstract", articleAbstract)
+									.set("FirstAuthor", firstAuthor)
+									.set("Affiliation", affiliation)
+									.set("FirstName", firstNameFinal)
+									.set("MiddleName", middleNameFinal)
+									.set("LastName", lastNameFinal)
+									.set("Author", author)
+									.set("DOI", doi)
+									.set("URL", url)
+									.set("Keywords", keywords)
+									.set("MeSH", meSH)
+									.set("JID", journalTemp.getInt("JournalId"))
+									.set("VID", journalVolume.getInt("VolumeID"))
+									.set("FirstPage", firstPage)
+									.set("LastPage", lastPage)
+									.set("FirstName", firstNameFinal)
+									.set("MiddleName", middleNameFinal)
+									.set("LastName", lastNameFinal)
+									.set("Language", language)
+									.set("crtime", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date()))
+									.set("JournalTitle", journalTemp.get("journalTitle"))
+									.set("ISSN", issn)
+									.set("Volume", volume)
+									.set("Issue", issue)
+									.set("Country", country)
+									.set("PubYear", year)
+									.set("PubMonth", month)
+									.set("PubDay", day)
+									.set("PubDate", pubDateFinal)
+									.set("ArticleId", articleId);
+							Db.save("WSSARTICLE","WPRIMID", newArticle);
+						}
+						
+						successCount++;
+					}
+				//导入全部数据
+				}else{
+					//生成xml论文数据唯一标识
+					String uniqueArticleCode = ArticleUtil.generateUniqueArticleCode(issn,year,volume,issue,firstPage,articleTitle);
+					
+					Record articleTemp = Db.findFirst("select * from WSSARTICLE where ARTICLEKEY = ?",uniqueArticleCode);
+					//论文数据不存在时创建
+					if(articleTemp == null){
+						//期刊名录不存在，则创建
+						if(journalTemp == null){
+							journalTemp = new Record().set("country", country).set("journalTitle", journalTitle).set("publisher", publisherName).set("ISSN", issn);
+							Db.save("WSSJOURNAL", "JournalId", journalTemp);
+							//创建期刊
+							journalVolume = new Record().set("Volume", volume).set("Issue", issue).set("PubYear", year).set("PubMonth", month).set("PubDay", day).set("JId", journalTemp.getInt("JournalId")).set("crtime", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date())).set("PubDate",pubDateFinal);
+							Db.save("WSSJOURNALVOLUME", "VolumeID",journalVolume);
+						}else{
+							Record journalVolumeTemp = Db.findFirst("select * from WSSJOURNALVOLUME where Volume = ? and Issue = ? and JID = ? and PubYear = ? and PubMonth = ? and PubDay = ?",volume,issue,journalTemp.getInt("JournalId"),year,month,day);
+							if(journalVolumeTemp == null){
+								//期刊名录存在，期刊不存在，则创建期刊
+								journalVolume = new Record().set("Volume", volume).set("Issue", issue).set("PubYear", year).set("PubMonth", month).set("PubDay", day).set("JId", journalTemp.getInt("JournalId")).set("crtime", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date())).set("PubDate",pubDateFinal);
+								Db.save("WSSJOURNALVOLUME", "VolumeID",journalVolume);
+							}else{
+								//期刊存在，则赋值给全局变量journalVolume
+								journalVolume = journalVolumeTemp;
+							}
+						}
+						
+						//处理部分论文数据，转换为可存储内容
+						//1.处理作者Author数据
+						String firstAuthor = "";
+						String firstNameFinal = "";
+						String middleNameFinal = "";
+						String lastNameFinal = "";
+						String affiliation = "";
+						String author = "";
+						for (int i = 0; i < authorList.size(); i++) {
+							Element authorElement = authorList.get(i);
+							String firstName = authorElement.elementText("FirstName");
+							String middleName = authorElement.elementText("MiddleName");
+							String lastName = authorElement.elementText("LastName");
+							String affiliationTemp = authorElement.elementText("Affiliation");
+							
+							//姓名组成部分连接符，各个作者中间连接符
+							String nameSeparator = ArticleConstant.EN_BAR;
+							String authorSeparator = ArticleConstant.EN_COLON;
+							
+							//设置FistAuthor和Affiliation
+							if(i == 0){
+								firstAuthor = firstName + " " + middleName + " " + lastName;
+								affiliation = affiliationTemp;
+								firstNameFinal = firstName;
+								middleNameFinal = middleName;
+								lastNameFinal = lastName;
+							}
+							
+							author += firstName + " " + middleName + " " + lastName + nameSeparator + affiliationTemp + (i == 0 ? "" : authorSeparator);
+						}
+						//2.处理ArticleId
+						String doi = "";
+						String url = "";
+						String articleId = "";
+						@SuppressWarnings("unchecked")
+						List<Element> articleIds = articleIdList.elements("ArticleId");
+						for(Element e : articleIds){
+							String articleIdAttribute = e.attributeValue("IdType");
+							String articleIdValue = e.getText();
+							doi = articleIdAttribute.equals("doi") ? articleIdValue : "";
+							url = articleIdAttribute.equals("url") ? articleIdValue : "";
+							articleId += articleIdValue;
+						}
+						//3.处理Keywords
+						String keywords = "";
+						int keywordsListSize = keywordsList.size();
+						if(keywordsList != null && keywordsListSize != 0){
+							for (int i = 0; i < keywordsListSize; i++) {
+								String keywordsValue = keywordsList.get(i).getText();
+								keywords += (i == 0) ? keywordsValue : (keywordsValue + ";");
+							}
+						}
+						//处理meSH
+						String meSH = "";
+						int meSHListSize = meSHList.size();
+						if(meSHList != null && meSHListSize != 0){
+							for (int i = 0; i < meSHListSize; i++) {
+								String meSHValue = meSHList.get(i).getText();
+								meSH += (i == 0) ? meSHValue : (meSHValue + ";");
+							}
+						}
+						
+						//导入论文数据
+						Record newArticle = new Record().set("ArticleTitle", articleTitle)
+								.set("VernacularTitle", vernacularTitle)
+								.set("FirstPage", firstPage)
+								.set("LastPage", lastPage)
+								.set("Language", language)
+								.set("PublicationType", publicationType)
+								.set("Abstract", articleAbstract)
+								.set("FirstAuthor", firstAuthor)
+								.set("Affiliation", affiliation)
+								.set("FirstName", firstNameFinal)
+								.set("MiddleName", middleNameFinal)
+								.set("LastName", lastNameFinal)
+								.set("Author", author)
+								.set("DOI", doi)
+								.set("URL", url)
+								.set("Keywords", keywords)
+								.set("MeSH", meSH)
+								.set("JID", journalTemp.getInt("JournalId"))
+								.set("VID", journalVolume.getInt("VolumeID"))
+								.set("FirstPage", firstPage)
+								.set("LastPage", lastPage)
+								.set("FirstName", firstNameFinal)
+								.set("MiddleName", middleNameFinal)
+								.set("LastName", lastNameFinal)
+								.set("Language", language)
+								.set("crtime", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date()))
+								.set("JournalTitle", journalTemp.get("journalTitle"))
+								.set("ISSN", issn)
+								.set("Volume", volume)
+								.set("Issue", issue)
+								.set("Country", country)
+								.set("PubYear", year)
+								.set("PubMonth", month)
+								.set("PubDay", day)
+								.set("PubDate", pubDateFinal)
+								.set("ArticleId", articleId);
+						Db.save("WSSARTICLE","WPRIMID", newArticle);
+					}
+					
+					successCount++;
+				}
+			}
+			
+			//返回导入结果，成功条数，总条数
+			Map<String, Integer> result = new HashMap<String, Integer>();
+			result.put("totalCount", totalCount);
+			result.put("successCount", successCount);
+			return result;
+			
+		}
+		return null;
+	}
+	
+}

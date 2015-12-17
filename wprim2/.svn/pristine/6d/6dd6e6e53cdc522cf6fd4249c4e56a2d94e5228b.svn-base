@@ -1,0 +1,8 @@
+package com.ninemax.util;
+
+public class ArticleUtil {
+
+	public static final String generateUniqueArticleCode(){
+		return null;
+	}
+}

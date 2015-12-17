@@ -1,0 +1,14 @@
+#db login parameters
+driverClass=com.mysql.jdbc.Driver
+jdbcUrl=jdbc\:mysql\://10.215.4.237\:3306/aikangmanage?useUnicode\=true&amp;characterEncoding\=UTF-8&amp;noAccessToProcedureBodies\=true
+user=ninemax
+password=ninemax
+
+#pool parameters
+initialPoolSize=2
+minPoolSize=2
+maxPoolSize=50
+acquireIncrement=2
+maxIdleTime=10
+#idleConnectionTestPeriod=5
+autoCommitOnClose=true

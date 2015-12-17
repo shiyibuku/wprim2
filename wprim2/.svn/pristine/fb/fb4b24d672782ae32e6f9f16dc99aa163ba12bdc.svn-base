@@ -1,0 +1,338 @@
+package com.ninemax.service.impl;
+
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+import org.apache.commons.codec.digest.DigestUtils;
+
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Record;
+import com.ninemax.model.User;
+import com.ninemax.service.IUserService;
+
+public class UserServiceImpl implements IUserService {
+	
+	//用户登陆
+	@Override
+	public Record login(String username, String password) {
+		return Db.findFirst("select * from Wprim_User where (UserName = ? or Email = ?) and Password = ?", username,username,DigestUtils.md5Hex("wprim2" + password));
+	}
+	//查询用户信息
+	@Override
+	public Object findAll(Object curr_user) {
+		
+		//强制类型转换curr_user为Record对象
+		Record userRecord = (Record) curr_user;
+		
+		List<Record> users = new ArrayList<Record>();
+		if(userRecord.getStr("UserName").equals("administrator")){
+			users = Db.find("select * from Wprim_User where UserName != 'administrator' or UserName is null");
+		}else{
+			Record nationalLiaisonerRecord = Db.findFirst("select Id from Wprim_Role where Rname_en_US = 'National Liaisoner'");
+			Record nationalDataManagerRecord = Db.findFirst("select Id from Wprim_Role where Rname_en_US = 'National Data Manager'");
+			
+			int userRecordId = userRecord.getInt("UserId");
+			//检查当前账户是否有 “国家联络员”或“国家数据管理员”的权限
+			Record userNationalLiaisoner = Db.findFirst("select * from User_Role where UserId = ? and RoleId = ?",userRecordId,nationalLiaisonerRecord.get("Id"));
+			Record userNationalDataManager = Db.findFirst("select * from User_Role where UserId = ? and RoleId = ?",userRecordId,nationalDataManagerRecord.get("Id"));
+			
+			if(userNationalLiaisoner != null || userNationalDataManager != null){
+				//获取本国编辑部、国家级期刊评委、国家级期刊评委主席的用户信息
+				String countryName = userRecord.getStr("Country");
+				if(countryName != null){
+					users = Db.find("select * from Wprim_User where Country = ? and UserName != 'administrator'",countryName);
+					//从用户集合中去除当前用户
+					Iterator<Record> it = users.iterator();
+					while(it.hasNext()){
+						if(it.next().get("UserId").equals(userRecord.get("UserId"))){
+							it.remove();
+						}
+					}
+					//检查每个用户是否有以上三种角色之一，如果都没有，则去除
+					int journalEditorialDepartmentId = Db.findFirst("select Id from Wprim_Role where Rname_en_US = 'Journal Editorial Department'").getInt("Id");
+					int nationalJournalRevieExpertId = Db.findFirst("select Id from Wprim_Role where Rname_en_US = 'National Journal Review Expert'").getInt("Id");
+					int chairmanOfNationalJournalReviewCommitteeId = Db.findFirst("select * from Wprim_Role where Rname_en_US = 'Chairman Of National Journal Review Committee'").getInt("Id");
+					Iterator<Record> it2 = users.iterator();
+					while(it2.hasNext()){
+						int userId = it2.next().getInt("UserId");
+						Record journalEditorialDepartmentUser = Db.findFirst("select * from User_Role where UserId = ? and RoleId = ?",userId,journalEditorialDepartmentId);
+						Record nationalJournalRevieExpertUser = Db.findFirst("select * from User_Role where UserId = ? and RoleId = ?",userId,nationalJournalRevieExpertId);
+						Record chairmanOfNationalJournalReviewCommitteeUser = Db.findFirst("select * from User_Role where UserId = ? and RoleId = ?",userId,chairmanOfNationalJournalReviewCommitteeId);
+						if(journalEditorialDepartmentUser == null && nationalJournalRevieExpertUser == null && chairmanOfNationalJournalReviewCommitteeUser == null){
+							it2.remove();
+						}
+					}
+				}
+			}
+		}
+		//查询用户角色
+		if(users.size() != 0){
+			for(Record r : users){
+				List<Record> roles = new ArrayList<Record>();
+				List<Record> userRoles = Db.find("select RoleId from User_Role where UserId = ?",r.getInt("UserId"));
+				if(userRoles.size() != 0){
+					for(Record record : userRoles){
+						roles.add(Db.findFirst("select * from Wprim_Role where Id = ?",record.getInt("RoleId")));
+					}
+				}
+				r.set("roles", roles);
+			}
+		}
+		return users;
+	}
+	
+	//查询所有国家
+	@Override
+	public Object findAllCountry() {
+		return Db.find("select * from Wprim_Country");
+	}
+	
+	//新增用户
+	@Override
+	public void save(String username, String password, String country, String editDep,
+			String address, String phone, String fax, String email,String[] role) {
+		User user = new User().set("UserName", username).set("Password", DigestUtils.md5Hex("wprim2" + password)).set("Country", country).set("EditDep", editDep).set("Address", address).set("Fax", fax).set("Phone", phone).set("Email", email);
+		user.save();
+		int userId = user.getInt("UserId");
+		for(int i=0;i<role.length;i++){
+			
+			Record record = new Record().set("UserId", userId).set("RoleId", role[i]);
+				
+			Db.save("User_Role", record);
+			}
+		}
+		
+	//根据ID删除用户
+	@Override
+	public boolean delete(String id) {
+		return Db.deleteById("Wprim_User", "UserId", id);
+		
+	}
+	//根据用户ID查用户
+	@Override
+	public Record queryData(String id) {
+		return Db.findById("Wprim_User", "UserId", Integer.valueOf(id));
+		
+	}
+	
+	//更新用户
+	@Override
+	public void update(Object curr_user,String userid,String username, String password, String country, String editDep,
+			String address, String phone, String fax, String email,String[] role) {
+		//更新用户信息
+		Record oldUser = Db.findFirst("select * from Wprim_User where UserId = ?",userid);
+		if(oldUser != null && oldUser.get("Password").equals(password)){
+			Db.update("update Wprim_User set UserName=?,Password=?,Country=?,EditDep=?,Address=?,Phone=?,Fax=?,Email=? where UserId=?", username, password,country,editDep,
+					 address,phone,fax,email,userid);
+		}else if(oldUser != null && !oldUser.get("Password").equals(password)){
+			Db.update("update Wprim_User set UserName=?,Password=?,Country=?,EditDep=?,Address=?,Phone=?,Fax=?,Email=? where UserId=?", username, DigestUtils.md5Hex("wprim2" + password),country,editDep,
+					 address,phone,fax,email,userid);
+		}
+		
+		//删除用户更新前所有角色,如果用户修改的不是自己再执行
+		Record currUser = (Record) curr_user;
+		if(!String.valueOf(currUser.getInt("UserId")).equals(userid)){
+			List<Record> userRoles = Db.find("select * from User_Role where UserId = ?",userid);
+			if(userRoles.size() != 0){
+				for(Record userRole : userRoles){
+					Db.delete("User_Role", userRole);
+				}
+			}
+		}
+		
+		//增加用户角色
+		if(role != null && role.length != 0){
+			for(int i=0;i<role.length;i++){
+				Record record = new Record().set("UserId", userid).set("RoleId", role[i]);
+				Db.save("User_Role", record);
+			}
+		}
+	}
+	
+	//查找所有角色
+	@Override
+	public List<Record> findRoles() {
+		return Db.find("select * from Wprim_Role");
+	}
+	
+	//根据用户查找角色
+	public Object findRoleByUser(){
+		//查出所有用户
+		List<Record> users=Db.find("select * from Wprim_User where UserName != 'administrator'");
+		Iterator<Record> user=users.iterator();
+		while(user.hasNext()){
+			
+			Record record=user.next();
+			//根据关系表查找角色ID
+			List<Record> roleIds=Db.find("select RoleId from User_Role where UserId=?",record.get("UserId"));
+			List<Record> roles=new ArrayList<Record>();
+			Iterator<Record> roleId=roleIds.iterator();
+			while(roleId.hasNext()){
+				
+				Record role=roleId.next();
+				//根据角色ID查找角色
+				roles.add(Db.find("select Rname from Wprim_Role where id=?",role.get("RoleId")).get(0));
+				
+			}
+			record.set("roles", roles);
+		}
+		return users;
+		
+	}
+	//根据用户ID查找角色
+	public List<Record> FindRoleByUserId(String id){
+		//找到角色ID
+		List<Record> roleIds=Db.find("select RoleId from User_Role where UserId=?",id);
+		
+		List<Record> roles=new ArrayList<Record>();
+		
+		if(roleIds.size()!=0){
+			
+			for(Record r:roleIds){
+				
+			roles.add(Db.findFirst("select * from Wprim_Role where Id=?",r.get("RoleId")));
+			}
+		}
+		
+		return  roles;
+	}
+	//移除用户已有国家
+	public void CountryRemove(Record user, List<Record> list) {
+		Iterator<Record> it = list.iterator();
+		
+		while(it.hasNext()){
+			Record record = it.next();
+			if(record.getStr("CountryName").equals(user.getStr("Country"))){
+				it.remove();
+			}
+		}
+	}
+	//移除用户绑定的角色
+	public void RoleRemove(List<Record> role1, List<Record> role2) {
+		
+		Iterator<Record> role22 = role2.iterator();
+		while(role22.hasNext()){
+			
+			Record r2=role22.next();
+			Iterator<Record> role11 = role1.iterator();
+			while(role11.hasNext()){
+				
+				Record r1=role11.next();
+				
+				if(r2.getStr("Rname").equals(r1.getStr("Rname"))){
+					
+					role22.remove();
+				}
+			}
+			
+		}
+	}
+	
+	//邮箱验证
+	@Override
+	public Record EmailVerify(String email){
+		return Db.findFirst("select * from Wprim_User where Email=?",email);
+	}
+	
+	//注册账户
+	public void VerifyPass(String email,String password){
+		Record record = new Record().set("Email", email).set("password", DigestUtils.md5Hex("wprim2" + password));
+		Db.save("Wprim_User", record);
+		
+	}
+	
+	//修改密码
+	@Override
+	public void ModifiPass(String username, String password) {
+		Db.update("Update Wprim_User set Password = ? where UserName = ?",DigestUtils.md5Hex("wprim2" +password),username);
+	}
+	//查询用户是否存在
+	@Override
+	public Record UserIsExit(String username) {
+		// TODO Auto-generated method stub
+		return Db.findFirst("select * from Wprim_User where UserName = ?",username);
+	}
+	
+	//验证当前用户是否有添加新用户的权限
+	@Override
+	public boolean checkForAddUser(Object curr_user) {
+		Record user = null;
+		if(curr_user != null && curr_user instanceof Record){
+			user = (Record) curr_user;
+		}
+		if(user != null){
+			//检测当前用户是否为系统管理员
+			String userName = user.getStr("UserName");
+			if(userName != null && userName.equals("administrator")){
+				return true;
+			}
+			//检测当前账户是否是“国家数据管理员”
+			Record nationalDataManagerRecord = Db.findFirst("select Id from Wprim_Role where Rname_en_US = 'National Data Manager'");
+			if(nationalDataManagerRecord != null){
+				Record userRole = Db.findFirst("select * from User_Role where UserId = ? and RoleId = ?",user.get("UserId"),nationalDataManagerRecord.get("Id"));
+				if(userRole != null){
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	
+	/**
+	 * 根据当前账户类型查找新增用户需要的国家选项
+	 */
+	@Override
+	public Object findCountry(Record user) {
+		if(user != null){
+			String userName = user.getStr("UserName");
+			if(userName != null){
+				if(userName.equals("administrator")){
+					return findAllCountry();
+				}else{
+					List<Record> countries = new ArrayList<Record>();
+					countries.add(new Record().set("CountryName", user.getStr("Country")));
+					return countries;
+				}
+			}
+		}
+		return null;
+	}
+	
+	/**
+	 * 根据当前用户查询可添加的角色
+	 */
+	@Override
+	public Object findRoles(Record user) {
+		String userName = user.getStr("UserName");
+		if(userName != null){
+			if(userName.equals("administrator")){
+				return findRoles();
+			}else{
+				int nationalDataManagerId = Db.findFirst("select Id from Wprim_Role where Rname_en_US = 'National Data Manager'").getInt("Id");
+				Record nationalDataManagerIdUser = Db.findFirst("select * from User_Role where UserId = ? and RoleId = ?",user.get("UserId"),nationalDataManagerId);
+				if(nationalDataManagerIdUser != null){
+					List<Record> roles = new ArrayList<Record>();
+					Record nationalJournalReviewExpert = Db.findFirst("select * from Wprim_Role where Rname_en_US = 'National Journal Review Expert'");
+					roles.add(nationalJournalReviewExpert);
+					return roles;
+				}
+			}
+		}
+		return null;
+	}
+	@Override
+	public List<Record> findRolesForUser(Object curr_user) {
+		Record user = (Record) curr_user;
+		List<Record> roles = new ArrayList<Record>();
+		List<Record> userRoles = Db.find("select RoleId from User_Role where UserId = ?",user.getInt("UserId"));
+		if(userRoles.size() != 0){
+			for(Record r : userRoles){
+				roles.add(Db.findFirst("select * from Wprim_Role where Id = ?",r.getInt("RoleID")));
+			}
+			return roles;
+		}
+		return null;
+	}
+}

@@ -1,0 +1,33 @@
+package com.ninemax.util;
+import java.util.List;
+
+public enum Role_ActionStatus {
+	
+	NationalLiaisoner(4,ActionStatus.getNationalLiaisonerActions()),xxx(1,ActionStatus.getNationalLiaisonerActions()),yyy(6,ActionStatus.getNationalLiaisonerActions());
+	
+	private Role_ActionStatus(int roleId,List<String> roleActions){
+		this.roleId = roleId;
+		this.roleActionStatus = roleActions;
+	}
+	
+	private int roleId;
+	
+	private List<String> roleActionStatus;
+
+	public int getRoleId() {
+		return roleId;
+	}
+
+	public void setRoleId(int roleId) {
+		this.roleId = roleId;
+	}
+
+	public List<String> getRoleActionStatus() {
+		return roleActionStatus;
+	}
+
+	public void setRoleActionStatus(List<String> roleActionStatus) {
+		this.roleActionStatus = roleActionStatus;
+	}
+
+}

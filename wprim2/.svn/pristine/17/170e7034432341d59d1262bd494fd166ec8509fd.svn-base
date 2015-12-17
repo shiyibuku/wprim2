@@ -1,0 +1,72 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%
+String path = request.getContextPath();
+String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.getServerPort()+path+"/";
+%>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<base href="<%=basePath%>">
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<title>WPRIM Candidate Journal Selection System</title>
+	<link href="static2/css/style.css" rel="stylesheet" type="text/css" />
+	<link href="static/assets/global/plugins/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css"/> 
+</head>
+<body>
+<div class="header"></div>
+<div class="container">
+  <div class="UserStatus">
+    <span class="a_img"><img src="static2/images/u_info.gif" align="middle" width="20" height="17" style="line-height: 17px;" /></span>&nbsp;Hello <span class="blue_color">sleepless</span>! </div>
+  <div class="main">
+    <div id="left">
+      <div class="l_nav">
+        <ul>
+          <li>
+            <h1>WPRIM</h1>
+          </li>
+          <li>
+            <a href="#">Home</a>
+          </li>
+          <li>
+            <a href="#">Website</a>
+          </li>
+          <li>
+            <a href="#">Overview</a>
+          </li>
+          <li>
+            <a href="#">Journal Selection Criteria</a>
+          </li>
+        </ul>
+        <ul>
+          <li>
+            <h1>Functions</h1>
+          </li>
+          <li>
+            <a href="e">Set Journal</a>
+          </li>
+        </ul>
+        <ul>
+          <li>
+            <h1>Settings</h1>
+          </li>
+          <li>
+            <a href="e">Logout</a>
+          </li>
+        </ul>
+        <ul>
+          <li>
+            <h1>Journal Manage</h1>
+          </li>
+          <li>
+            <a href="admin/journal/createJournal">Journal Create</a>
+          </li>
+           <li>
+            <a href="admin/journal/createJournalVolume">JournalVolume Create</a>
+          </li>
+           <li>
+            <a href="admin/journal/queryJournal?JournalId=31">Journal Update</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+

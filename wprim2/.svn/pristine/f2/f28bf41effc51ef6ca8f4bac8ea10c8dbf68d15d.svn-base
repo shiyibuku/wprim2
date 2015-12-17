@@ -1,0 +1,14 @@
+package com.ninemax.util;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+public class RoleActionStatus {
+
+	public static final Map<Integer, List<String>> nationalLiaisonerActions = new HashMap<Integer,List<String>>();
+	
+	static{
+		nationalLiaisonerActions.put(4, ActionStatus.getNationalLiaisonerActions());
+	}
+}

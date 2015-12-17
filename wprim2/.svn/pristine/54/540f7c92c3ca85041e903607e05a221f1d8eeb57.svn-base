@@ -1,0 +1,18 @@
+package com.ninemax.util;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class ActionStatus {
+	
+	public static final String UNSUBMITTED_NJSC="unsubmitted_njsc";//提交至NJSC
+	
+	public static final String RNJSC_RJSC="rnjsc_rjsc";//提交到RJSC
+	
+	public static final List<String> getNationalLiaisonerActions(){
+		List<String> list = new ArrayList<>();
+		list.add(UNSUBMITTED_NJSC);
+		list.add(RNJSC_RJSC);
+		return list;
+	}
+}

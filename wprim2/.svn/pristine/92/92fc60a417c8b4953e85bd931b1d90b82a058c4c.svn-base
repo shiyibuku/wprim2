@@ -1,0 +1,31 @@
+package com.ninemax.util;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * 评审动作
+ * 
+ * @author Darker
+ * 
+ */
+public class ActionStatus {
+
+	public static final String UNSUBMITTED_NJSC = "Unsubmitted_submitted to NJSC";// 提交至NJSC
+	// 提交到NJSC后的两种动作
+	public static final String NJSC_REJECTED = "reviewed by NJSC_rejected by NJSC";// NJSC驳回
+	
+	public static final String RNJSC_RJSC = "reviewed by NJSC_submitted to RJSC";// 提交到RJSC
+
+	// 在新录提交到RJSC的前提下
+	public static final String RJSC_REJECTED = "reviewed by RJSC_rejected by RJSC";// RJSC驳回
+
+	public static final String RJSC_APPROVED = "reviewed by RJSC_approved by RJSC";// 评审通过
+
+	public static final List<String> getNationalLiaisonerActions() {
+		List<String> list = new ArrayList<>();
+		list.add(UNSUBMITTED_NJSC);
+		list.add(RNJSC_RJSC);
+		return list;
+	}
+}

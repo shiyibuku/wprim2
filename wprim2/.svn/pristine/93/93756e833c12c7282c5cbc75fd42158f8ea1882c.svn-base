@@ -1,0 +1,69 @@
+package com.ninemax.service;
+
+import java.util.List;
+
+import com.jfinal.plugin.activerecord.Page;
+import com.jfinal.plugin.activerecord.Record;
+import com.jfinal.upload.UploadFile;
+import com.ninemax.model.Journal;
+
+public interface IJournalService {
+	// 新增期刊名录(stop)
+	void save(String journalTitle, String VernacularJournalTitle,
+			String country, String publisher, String ISSN1, String ISSN2,
+			String EISSN1, String EISSN2, String EditorInChief,
+			String EditorEmail, String Abbreviation, String StartYear,
+			String start_volume, String start_issue, String coverPath,
+			String Description, String suspendedtime, String OfficeAddress,
+			String TelephoneNumber, String WebSite, String IssuesNumber,
+			String EditorsNumber, String ReviewersNumber,
+			String InternationReviewersNumber, String ReceivedRatioNumber,
+			String EachPaper, String PublishedRatioNumber, String[] OtherKu,
+			String AccessStatus, String FeePapers,String filePath);
+
+	// 查询某一个
+	Record queryJournal(int id, Record curr_user);
+
+	// 更新
+	void update(UploadFile file, Journal journal, String ISSN1, String ISSN2,
+			String EISSN1, String EISSN2);
+
+	// 删除
+	void delete(int journalId, Record curr_user);
+
+	// 查找期刊名录
+	Object search(Record curr_user, String pageNumber, String journalTitle,
+			String country, String reviewStatus);
+
+	// 计算显示页码
+	Object countPageNumberList(int handlePageNumber, int size);
+
+	// 获取所有的评审状态
+	Object getAllReviewStatus();
+
+	// 评审操作
+	Object review(Record sessionAttr, String para, String[] parameterValues);
+
+	// 查询所有国家
+	List<Record> findAllCountry();
+
+	// 评审（agree/disagree/comment）
+	void vote(Record curr_user, Integer journalId, String voteType,
+			String comment, Integer isAgree);
+
+	// 获取投票评论评审内容
+	Object getVote(Record curr_user, Integer journalId, String voteType);
+
+	//查找已审批通过的期刊名录
+	Page<Record> findAllApproved(int pageNumber, String journalTitle,
+			String startWith, String newsroom, String country);
+	
+	//检查用户是否有创建期刊名录的权限
+	boolean canCreateNewJournal(Record curr_user);
+	
+	//设置编辑部参数
+	Object setNewsroom(Record curr_user);
+
+	//设置国家参数
+	Object setCountry(Record curr_user);
+}

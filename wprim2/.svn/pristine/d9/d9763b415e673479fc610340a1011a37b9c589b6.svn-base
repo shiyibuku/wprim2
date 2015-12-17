@@ -1,0 +1,48 @@
+package com.ninemax.controller;
+
+import com.jfinal.plugin.activerecord.Record;
+import com.ninemax.controller.base.BaseController;
+import com.ninemax.service.IUserService;
+import com.ninemax.service.impl.UserServiceImpl;
+
+public class UserController extends BaseController {
+	
+	private IUserService userService = new UserServiceImpl();
+	
+	public void save(){
+		userService.save(getPara("username"),getPara("password"),getPara("country"),getPara("editDep"),getPara("address"),getPara("phone"),getPara("fax"),getPara("email"));
+		redirect("/admin/user/index");
+	}
+	
+	public void logout(){
+		getSession().invalidate();
+		render("/index.jsp");
+	}
+	
+	public void newUser(){
+		Record user = getSessionAttr("curr_user");
+		if(user != null && user.getStr("UserName").equals("administrator")){
+			setAttr("countryList", userService.findAllCountry());
+			render("/user/new.jsp");
+		}
+	}
+	
+	public void index(){
+		setAttr("userList", userService.findAll());
+		render("/user/list.jsp");
+	}
+	
+	public void login(){
+		Record user = userService.login(getPara("username"),getPara("password"));
+		if(user != null){
+			setSessionAttr("curr_user", user);
+			redirect("/admin/user/home");
+		}else{
+			render("/index.jsp");
+		}
+	}
+	
+	public void home(){
+		render("/home/home.jsp");
+	}
+}

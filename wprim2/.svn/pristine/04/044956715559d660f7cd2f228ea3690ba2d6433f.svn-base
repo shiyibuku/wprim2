@@ -1,0 +1,33 @@
+<%@ page language="java" import="java.util.*" pageEncoding="utf-8"%>
+<%
+String path = request.getContextPath();
+String basePath = request.getScheme() + "://"+ request.getServerName() + ":" + request.getServerPort()+ path + "/";
+%>
+<!DOCTYPE HTML>
+<html>
+<head>
+<base href="<%=basePath%>">
+<link href="static/assets/global/plugins/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css"/> 
+<link href="resource/css/style.css" rel="stylesheet"  type="text/css"/>
+</head>
+
+<body>
+	<section class="w1000 mc split_header">
+		<header class="nav_title fw f20">Modify Password</header><br>
+		<form action="admin/user/modifyPassword">
+			<div class="min_fix w310">
+				<label>UserName</label> 
+				<input type="text" class="form-control" name="UserName" placeholder="UserName">
+			</div><br>
+			<div class="min_fix w310">
+				<label>Password</label>
+				<input type="password" class="form-control" name="Password" placeholder="Password">
+			</div><br>
+		
+			<div class="min_fix w310">
+				<button type="submit" class="btn btn-info">Submit</button>
+			</div>
+		</form>
+	</section>
+</body>
+</html>

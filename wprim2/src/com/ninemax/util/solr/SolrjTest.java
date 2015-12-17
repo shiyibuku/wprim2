@@ -1,0 +1,40 @@
+package com.ninemax.util.solr;
+
+import java.io.IOException;
+import java.util.Properties;
+
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
+
+public class SolrjTest {
+	public static void main(String[] args) {
+		//读取配置文件，获取solr服务器地址
+		Properties prop = new Properties();
+		try {
+			prop.load(SolrjTest.class.getClassLoader().getResourceAsStream("solr.properties"));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		String url = prop.getProperty("server");
+		@SuppressWarnings("resource")
+		SolrClient client = new HttpSolrClient(url);
+		SolrQuery query = new SolrQuery();
+		query.setQuery("article:分布式");
+		query.setStart(0);
+		query.setRows(Integer.MAX_VALUE);
+		try {
+			QueryResponse response = client.query(query);
+			SolrDocumentList list = response.getResults();
+			for(SolrDocument d : list){
+				int id = (int) d.getFieldValue("id");
+				System.out.println("id:" + id + " article:");
+			}
+		} catch (SolrServerException | IOException e) {
+		}
+	}
+}

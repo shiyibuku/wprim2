@@ -1,0 +1,91 @@
+package com.ninemax.controller;
+
+import com.jfinal.core.Controller;
+import com.jfinal.plugin.activerecord.Page;
+import com.jfinal.plugin.activerecord.Record;
+import com.ninemax.model.JournalVolume;
+import com.ninemax.service.IJournalService;
+import com.ninemax.service.impl.IJournalServiceImpl;
+import com.ninemax.util.PageNumberUtil;
+
+
+public class JournalController extends Controller{
+	
+	private IJournalService journalService=new IJournalServiceImpl();
+	
+	//期刊查询
+	public void findAll(){
+		String pageNumber = getPara("pageNumber");
+		@SuppressWarnings("unchecked")
+		Page<Record> journalList = (Page<Record>) journalService.search((Record) getSessionAttr("curr_user"),PageNumberUtil.availablePageNumber(pageNumber),getPara("journalTitle"),getPara("country"),getPara("reviewStatus")); 
+		setAttr("journalList",journalList);
+		setAttr("pageNumberList", journalService.countPageNumberList(PageNumberUtil.handlePageNumber(pageNumber),journalList.getList().size()));
+		render("/journal/journal_home.jsp");
+	}
+
+	// 跳转到期刊名录创建
+	public void createJournal() {
+
+		render("/journal/createjournal.jsp");
+	}
+
+	// 期刊名录保存
+	public void save() {
+
+		journalService.save(getPara("journalTitle"),
+				getPara("VernacularJournalTitle"), getPara("country"),
+				getPara("publisher"), getPara("ISSN"), getPara("EISSN"),
+				getPara("ElectronicLinks"), getPara("EditorInChief"),
+				getPara("EditorEmail"), getPara("Abbreviation"),
+				getPara("StartYear"), getPara("suspendedtime"),
+				getPara("Description"), getPara("volume"),
+				getPara("start_volume"), getPara("issue"),
+				getPara("start_issue"), getPara("CRUSER"),
+				getPara("FIRSTLETTER"), getPara("CountrySimple"),
+				getPara("review_status"), getPara("edit_department"),
+				getParaToDate("PubDate"), getParaToDate("CRTIME"),
+				getParaToInt("hc"));
+
+		render("/home.jsp");
+	}
+
+	// 查询某一期刊名录
+	public void queryJournal() {
+
+		Record journal = journalService.queryJournal(getPara(""));
+
+		setAttr("journal", journal);
+
+		render("/journal/updateJournal.jsp");
+	}
+
+	// 更新期刊名录信息
+	public void update() {
+
+		journalService.update();
+
+		render("/home.jsp");
+	}
+
+	// 删除期刊名录信息
+	public void delete() {
+
+		journalService.delete(getPara(""));
+
+		render("/home.jsp");
+	}
+
+	// 跳转到期刊创建
+	public void createJournalVolume() {
+
+		render("/journal/createJournalVolume.jsp");
+	}
+
+	// 期刊保存
+	public void saveJournalVolume() {
+		
+		JournalVolume journalVolume = getModel(JournalVolume.class);
+		journalVolume.save();
+		render("/home.jsp");
+	}
+}

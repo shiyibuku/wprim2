@@ -1,0 +1,86 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<jsp:include page="/include/journalhome.jsp"></jsp:include>
+<div id="right">
+    <div class="r_top"></div>
+      <div class="r_main">
+       <div style="margin-bottom: 5px;">WPRIM &gt;
+          <a href="index.jsp">Home</a>&gt;
+          <span> Journal Update</span>
+        </div>
+    	<form action="admin/journal/update">
+    		<input type="hidden" name="journal.globalid" value="${journal.globalid}">
+    		<h1>Basic Information</h1>
+    		<label>JournalTitle:</label>
+			<input type="text" name="journal.journalTitle" value="${journal.journalTitle }"class="form-control"/>
+			<br>
+			<label>VemacularJournalTitle:</label>
+			<input type="text" name="journal.VernacularJournalTitle" value="${journal.VernacularJournalTitle}" class="form-control"/>
+			<br>
+    		<label>Country:</label>
+			<select  id="sel" name="journal.country" class="form-control">
+				<option value="${journal.country}" selected>${journal.country}</option>
+			</select>
+			<br>
+			<label>publisher:</label>
+			<input type="text" name="journal.publisher" value="${journal.publisher}" class="form-control" />
+			<br>
+			<label>ISSN:</label>
+			<input type="text" name="ISSN1" value="${journal.ISSN.split('-')[0]}" class="form-control"/>&mdash;
+			<input type="text" name="ISSN2" value="${journal.ISSN.split('-')[1]}" class="form-control"/>
+			<br>
+			<label>EISSN:</label>
+			<input type="text" name="EISSN1" value="${journal.EISSN.split('-')[0]}" class="form-control"/>&mdash;
+			<input type="text" name="EISSN2" value="${journal.EISSN.split('-')[1]}" class="form-control"/>
+			<br>
+			<label>ElectronicLinks:</label>
+			<input type="text" name="journal.ElectronicLinks" value="${journal.ElectronicLinks}" class="form-control"/>
+			<br>
+			<label>EditorInChief:</label>
+			<input type="text" name="journal.EditorInChief" value="${journal.EditorInChief}" class="form-control"/>
+			<br>
+			<label>EditorEmail:</label>
+			<input type="text" name="journal.EditorEmail" value="${journal.EditorEmail}" class="form-control"/>
+			<br>
+			<label>Abbreviation:</label>
+			<input type="text" name="journal.Abbreviation" value="${journal.Abbreviation}" class="form-control"/>
+			<br>
+			<label>StartYear:</label>
+			<input type="text" name="journal.StartYear" value="${journal.StartYear}" class="form-control"/>
+			<br>
+			<label>SuspendedTime:</label>
+			<input type="text" name="journal.suspendedtime" value="${journal.suspendedtime}" class="form-control"/>
+			<br>
+			<label>Description:</label>
+			<textarea  name="journal.Description" rows="4" cols="25" class="text">${journal.Description}</textarea>
+			<br>
+			<label>Start_Issue:</label>
+			<input type="text" name="journal.start_issue" value="${journal.start_issue}" class="form-control" value="1"/>
+			<br>
+			<label>Start_Volume:</label>
+			<input type="text" name="journal.start_volume" value="${journal.start_volume}" class="form-control" value="1"/>
+			<br>
+			<button class="btn btn-info" value="Submit">Submit</button>&nbsp
+			<button class="btn btn-info" value="Cancel" onclick="window.close">Cancel</button>
+    	</form>
+    </div>
+   	<div class="r_bot"></div>
+  </div>
+  </div>
+  <div class="footer">
+  <div class="copyright"> ©2015 Regional Journal Selection Committee, WHO West Pacific Region Office. All right reserved. </div>
+</div>
+<script src="static/assets/global/plugins/jquery.min.js" type="text/javascript"></script>
+<script type="text/javascript">
+//select默认只读
+window.onload=function(){
+  var osel=document.getElementById("sel");
+  osel.onfocus=function(){
+    this.defaultIndex=this.selectedIndex;
+  };
+  osel.onchange=function(){
+    this.selectedIndex=this.defaultIndex;
+  };
+};
+</script>   
+  </body>
+</html>

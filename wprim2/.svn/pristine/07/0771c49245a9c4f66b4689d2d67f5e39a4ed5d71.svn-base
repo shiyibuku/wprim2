@@ -1,0 +1,13 @@
+#db login parameters
+driverClass=com.microsoft.sqlserver.jdbc.SQLServerDriver
+jdbcUrl=jdbc\:sqlserver\://10.215.4.167\:1433;databaseName\=wprim2
+user=sa
+password=sa
+#pool parameters
+initialPoolSize=2
+minPoolSize=2
+maxPoolSize=50
+acquireIncrement=2
+maxIdleTime=10
+#idleConnectionTestPeriod=5
+autoCommitOnClose=true

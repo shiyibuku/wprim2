@@ -1,0 +1,135 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<jsp:include page="/include/journalhome.jsp"></jsp:include>
+<div id="right">
+    <div class="r_top"></div>
+      <div class="r_main">
+       <div style="margin-bottom: 5px;">WPRIM &gt;
+          <a href="index.jsp">Home</a>&gt;
+          <span> Journal Create</span>
+        </div>
+    	<form method="post" action="admin/journal/save" enctype="multipart/form-data">
+    		<h1>Basic Information</h1>
+    		<label>Country:</label>
+			<select name="country" class="form-control">
+				<c:forEach items="${countryList}" var="Country">
+					<option value="${Country.CountryName}">${Country.CountryName}</option>
+				</c:forEach>
+			</select><br>
+    		<label>JournalTitle(in English):</label>
+			<input type="text" name="journalTitle" class="form-control"/>
+			<br>
+			<label>VemacularJournalTitle:</label>
+			<input type="text" name="VernacularJournalTitle" class="form-control"/>
+			<br>
+    		<label>Abbreviation:</label>
+			<input type="text" name="Abbreviation" class="form-control"/>
+			<br>
+			<label>ISSN:</label>
+			<input type="text" name="ISSN1" class="form-control" />&mdash;
+			<input type="text" name="ISSN2" class="form-control" />
+			<br>
+			<label>EISSN:</label>
+			<input type="text" name="EISSN1" class="form-control"/>&mdash;
+			<input type="text" name="EISSN2" class="form-control"/>
+			<br>
+			<label>CN:</label>
+			<input type="text" name="CN1" class="form-control"/>&mdash;
+			<input type="text" name="CN2" class="form-control"/>
+			<br>
+			<label>StartYear:</label>
+			<input type="text" name="StartYear" class="form-control"/>
+			<br>
+			<label>Language:</label>
+			<input type="text" name="Language" class="form-control"/>
+			<br>
+			<label>Sponsor: </label>
+			<input type="text" name="Sponsor" class="form-control"/>
+			<br>
+			<label>Publisher:</label>
+			<input type="text" name="publisher" class="form-control"/>
+			<br>
+			<label>Cover:</label>
+			<input type="file" name="cover">
+			<br><br>
+			<label>Description:</label>
+			<textarea name="Description" class="form-control"></textarea>
+			<br>
+			<h1>Contact Information</h1>
+			<label>EditorinChief:</label>
+			<input type="text" name="EditorInChief" class="form-control"/>
+			<br>
+			<label>OfficeAddress(in English):</label>
+			<input type="text" name="OfficeAddress" class="form-control"/>
+			<br>
+			<label>TelephoneNumber:</label>
+			<input type="text" name="TelephoneNumber" class="form-control"/>
+			<br>
+			<label>Editor Email:</label>
+			<input type="text" name="EditorEmail" class="form-control"/>
+			<br>
+			<label>Website:</label>
+			<input type="text" name="Website" class="form-control"/>
+			<br>
+			<h1>Statistical Data</h1>
+			<label>Number of Issues(per year):</label>
+			<input type="text" name="Issues" class="form-control"/>
+			<br>
+			<label>Number of Papers(per issue):</label>
+			<input type="text" name="Papers" class="form-control"/>
+			<br>
+			<label>Number of Editors:</label>
+			<input type="text" name="Editors" class="form-control"/>
+			<br>
+			<label>Number of Reviewers:</label>
+			<input type="text" name="Reviewers" class="form-control"/>
+			<br>
+			<label>Number of International Reviewers:</label>
+			<input type="text" name="InternationalReviewers" class="form-control"/>
+			<br>
+			<label>Acceptance Ratio:</label>
+			<input type="text" name="Ratio" class="form-control"/>
+			<br>
+			<label>Average Number of References of each Paper:</label>
+			<input type="text" name="EachPaper" class="form-control"/>
+			<br>
+			<label>Fund Paper Ratio:</label>
+			<input type="text" name="PaperRatio" class="form-control"/>
+			<br>
+			<label>Indexed by MEDLINE?:</label>
+			<input type="text" name="Medline" class="form-control"/>
+			<br>
+			<label>Indexed by SCI?:</label>
+			<input type="text" name="SCI" class="form-control"/>
+			<br>
+			<label>Open Access Status:</label>
+			<input type="text" name="AccessStatus" class="form-control"/>
+			<br>
+			<label>Publication fee of Papers:</label>
+			<input type="text" name="FeeOfPapers" class="form-control"/>
+			<br>
+			<label>publisher:</label>
+			<input type="text" name="publisher" class="form-control"/>
+			<br>
+			<label>SuspendedTime:</label>
+			<input type="text" name="suspendedtime" class="form-control"/>
+			<br>
+			<label>Start_Issue:</label>
+			<input type="text" name="start_issue" class="form-control" value="1"/>
+			<br>
+			<label>Start_Volume:</label>
+			<input type="text" name="start_volume" class="form-control" value="1"/>
+			<br>
+			<button class="btn btn-info" value="Submit">Submit</button>&nbsp
+			<button class="btn btn-info" value="Cancel" onclick="window.close">Cancel</button>
+    	</form>
+    </div>
+   	<div class="r_bot"></div>
+  </div>
+  </div>
+  <div class="footer">
+  <div class="copyright"> ©2012 Regional Journal Selection Committee, WHO West Pacific Region Office. All right reserved. </div>
+</div>
+<script src="static/assets/global/plugins/jquery.min.js" type="text/javascript"></script>
+  </body>
+</html>

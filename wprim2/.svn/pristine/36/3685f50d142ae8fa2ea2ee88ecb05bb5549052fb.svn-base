@@ -1,0 +1,16 @@
+package com.ninemax.service;
+
+import com.jfinal.plugin.activerecord.Record;
+
+public interface IUserService {
+
+	Record login(String para, String para2);
+
+	Object findAll();
+
+	Object findAllCountry();
+
+	void save(String para, String para2, String para3, String para4,
+			String para5, String para6, String para7, String para8);
+
+}

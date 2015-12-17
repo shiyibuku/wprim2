@@ -1,0 +1,63 @@
+package com.ninemax.service.impl;
+
+import org.apache.commons.codec.digest.DigestUtils;
+
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Record;
+import com.ninemax.model.User;
+import com.ninemax.service.IUserService;
+
+public class UserServiceImpl implements IUserService {
+
+	@Override
+	public Record login(String username, String password) {
+		return Db.findFirst("select * from Wprim_User where UserName = ? and Password = ?", username,DigestUtils.md5Hex("wprim2" + password));
+	}
+
+	@Override
+	public Object findAll() {
+		return Db.find("select * from Wprim_User where UserName != 'administrator'");
+	}
+
+	@Override
+	public Object findAllCountry() {
+		return Db.find("select * from Wprim_Country");
+	}
+
+	@Override
+	public void save(String username, String password, String country, String editDep,
+			String address, String phone, String fax, String email) {
+		User user = new User().set("UserName", username).set("Password", DigestUtils.md5Hex("wprim2" + password)).set("Country", country).set("EditDep", editDep).set("Address", address).set("Fax", fax).set("Phone", phone).set("Email", email);
+		user.save();
+		int userId = user.getInt("UserId");
+	}
+
+	@Override
+	public boolean delete(String id) {
+		return Db.deleteById("Wprim_User", "UserId", id);
+		
+	}
+
+	@Override
+	public Record queryData(String id) {
+		// TODO Auto-generated method stub
+		return Db.findById("Wprim_User", "UserId", Integer.valueOf(id));
+		
+	}
+
+	@Override
+	public int update(String userid,String username, String password, String country, String editDep,
+			String address, String phone, String fax, String email) {
+		
+		return Db.update("update Wprim_User set UserName=?,Password=?,Country=?,EditDep=?,Address=?,Phone=?,Fax=?,Email=? where UserId=?", username, password,country,editDep,
+				 address,phone,fax,email,userid);
+		
+	}
+
+	@Override
+	public Object findRole() {
+		// TODO Auto-generated method stub
+		return Db.find("select * from Wprim_Role");
+	}
+
+}

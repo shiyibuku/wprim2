@@ -1,0 +1,50 @@
+package com.ninemax.util;
+
+import java.util.List;
+
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Record;
+/**
+ * 查询某用户是否有某个角色
+ * @author ninemax-jzh
+ *
+ */
+public class UserUtil {
+
+	public static boolean haveRole(int userId,String roleName){
+		Record role = Db.findFirst("select * from Wprim_Role where Rname_en_US = ?",roleName);
+		if(role != null){
+			Record userRole = Db.findFirst("select * from User_Role where UserId = ? and RoleId = ?",userId,role.getInt("Id"));
+			return userRole != null;
+		}
+		return false;
+	}
+	
+	public static boolean haveRole(Record user,String roleName){
+		if(user != null){
+			return haveRole(user.getInt("UserId"),roleName);
+		}
+		return false;
+	}
+	
+	public static boolean haveAnyOfRoles(int userId,List<String> roleNames){
+		if(roleNames != null && roleNames.size() != 0){
+			int flag = 0;
+			for(String roleName : roleNames){
+				if(haveRole(userId,roleName)){
+					flag++;
+					break;
+				}
+			}
+			return flag != 0;
+		}
+		return false;
+	}
+	
+	public static boolean haveAnyOfRoles(Record user,List<String> roleNames){
+		if(user != null){
+			return haveAnyOfRoles(user.getInt("UserId"), roleNames);
+		}
+		return false;
+	}
+}

@@ -1,0 +1,102 @@
+<%@ page language="java" import="java.util.*" pageEncoding="UTF-8"%>
+<%
+	String path = request.getContextPath();
+	String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.getServerPort()+path+"/";
+%>
+<!DOCTYPE html>
+<html>
+<head>
+	<base href="<%=basePath%>">
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<title>Wprim2</title>
+	<link href="static2/approved/css/style.css" rel="stylesheet" type="text/css" />
+	<link href="static2/approved/css/eng_dl.css" rel="stylesheet" type="text/css" />
+</head>
+
+<body>
+<div class="header" style="height:110px;">
+  <div class="qlink">
+    <a href="#">Edit My Information   </a>
+    |
+    <a href="#">Logout</a>
+  </div>
+</div>
+<div class="container">
+  <div class="locate">
+    <div>WPRIM >
+      <a href="rr">Home</a>
+      >
+      <a href="#">China</a>
+    </div>
+  </div>
+  <div class="main">
+    <div class="box">
+    <div class="article_title">${article.ArticleTitle }</div>
+
+<TABLE width=90% border=0 align="center" cellPadding=0 cellSpacing=5><TBODY>
+<TR>
+<TD align="right" valign="top" class=qktitle1>Article Title&nbsp;:&nbsp;</TD>
+<TD class=zw>${article.ArticleTitle }</TD></TR>
+<TR>
+<TD align="right" valign="top" class=qktitle1>Vernacular Title&nbsp;:&nbsp; </TD>
+<TD class=zw>${article.VernacularTitle }</TD></TR>
+<TR>
+<TD align="right" valign="top" class=qktitle1>Language&nbsp;:&nbsp;</TD>
+<TD class=zw>${article.Language }</TD></TR>
+<TR>
+<TD align="right" valign="top" class=qktitle1>Author&nbsp;:&nbsp;</TD>
+<TD class=zw>${article.Author }</TD></TR>
+<TR>
+<TD align="right" valign="top" class=qktitle1>CollectiveName&nbsp;:&nbsp;</TD>
+<TD class=zw>${article.CollectiveName }</TD></TR>
+<TR>
+<TD align="right" valign="top" class=qktitle1>Affiliation&nbsp;:&nbsp;</TD>
+<TD class=zw>${article.Affiliation }</TD></TR>
+<TR>
+<TD align="right" valign="top" class=qktitle1>FirstPage&nbsp;:&nbsp;</TD>
+<TD class=zw>${article.FirstPage }</TD></TR>
+<TR>
+<TD align="right" valign="top" class=qktitle1>LastPage&nbsp;:&nbsp;</TD>
+<TD class=zw>${article.LastPage }</TD></TR>
+<TR>
+<TD align="right" valign="top" class=qktitle1>Journal Title&nbsp;:&nbsp;</TD>
+<TD class=zw>${article.JournalTitle }</TD></TR>
+<TR>
+<TD align="right" valign="top" class=qktitle1>Volume&nbsp;:&nbsp;</TD>
+<TD class=zw>${article.Volume }</TD></TR>
+<TR>
+<TD align="right" valign="top" class=qktitle1>Issue&nbsp;:&nbsp;</TD>
+<TD class=zw>${article.Issue }</TD></TR>
+<TR>
+<TD width=150 align="right" valign="top" class=qktitle1>ISSN(ISSN/EISSN)&nbsp;:&nbsp;</TD>
+<TD class=zw>1674-6090</TD></TR>
+<TR>
+<TD align="right" valign="top" class=qktitle1>Publication Type&nbsp;:&nbsp;</TD>
+<TD class=zw>${article.PublicationType }</TD></TR>
+<TR>
+<TD align="right" valign="top" class=qktitle1>Keywords&nbsp;:&nbsp;</TD>
+<TD class=zw>${article.Keywords }</TD></TR>
+<TR>
+<TD align="right" valign="top" class=qktitle1>MeSH&nbsp;:&nbsp;</TD>
+<TD class=zw>${article.MeSH }</TD></TR>
+<TR>
+<TD align="right" valign="top" class=qktitle1>PubDate&nbsp;:&nbsp;</TD>
+<TD class=zw>${article.PubDate }</TD></TR>
+<TR>
+<TD align="right" valign="top" class=qktitle1>ArticleId&nbsp;:&nbsp;</TD>
+<TD class=zw>${article.ArticleId }</TD></TR>
+<TR>
+<TD align="right" valign="top" class=qktitle1>Abstract&nbsp;:&nbsp;</TD>
+<TD class=zw>${article.Abstract }</TD></TR>
+<TR>
+<TD align="right" valign="top" class=qktitle1>Appendix&nbsp;:&nbsp;</TD>
+<TD class=zw>???</TD></TR></TBODY></TABLE>
+    </div>
+  </div>
+</div>
+<div class="footer">
+  <div class="copyright"> ©2012 Regional Journal Selection Committee, WHO West Pacific Region Office. All right reserved. </div>
+</div>
+</body>
+</html>
+

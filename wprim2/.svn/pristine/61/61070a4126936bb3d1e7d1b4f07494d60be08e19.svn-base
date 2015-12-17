@@ -1,0 +1,18 @@
+package com.ninemax.controller;
+
+import org.dom4j.DocumentException;
+
+import com.jfinal.plugin.activerecord.Record;
+import com.ninemax.controller.base.BaseController;
+import com.ninemax.service.IArticleService;
+import com.ninemax.service.impl.ArticleServiceImpl;
+
+public class ArticleController extends BaseController {
+
+	private static IArticleService articleService = new ArticleServiceImpl();
+	
+	//导入期刊论文xml文件数据
+	public void importXml() throws DocumentException{
+		setAttr("isSuccess", articleService.importXml(getFile("xmlFile"),(Record)getSessionAttr("curr_user")));
+	}
+}

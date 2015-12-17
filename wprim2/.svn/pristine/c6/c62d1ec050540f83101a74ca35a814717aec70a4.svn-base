@@ -1,0 +1,47 @@
+package com.ninemax.service.impl;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Record;
+import com.ninemax.model.Journal;
+import com.ninemax.service.IJournalService;
+
+public class IJournalServiceImpl implements IJournalService {
+	@Override
+	public Record findAll() {
+		// TODO Auto-generated method stub
+		List<Record> journal=new ArrayList<Record>();
+		journal=Db.find("");
+		return (Record) journal;
+	}
+	
+	@Override
+	public void save() {
+		// TODO Auto-generated method stub
+		Journal journal= new Journal().set("", "");
+		journal.save();
+	}
+	
+	@Override
+	public Record queryJournal(String id){
+		
+		return Db.findById(" ", id);
+	}
+	
+	@Override
+	public void update() {
+		// TODO Auto-generated method stub
+		Db.update(" ");
+	}
+
+	@Override
+	public void delete(String id) {
+		// TODO Auto-generated method stub
+		Db.deleteById("","",id);
+	}
+
+	
+
+}

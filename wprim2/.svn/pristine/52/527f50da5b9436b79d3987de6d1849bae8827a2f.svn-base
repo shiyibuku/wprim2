@@ -1,0 +1,78 @@
+<%@ page language="java" import="java.util.*" pageEncoding="utf-8"%>
+<%
+String path = request.getContextPath();
+String basePath = request.getScheme() + "://"+ request.getServerName() + ":" + request.getServerPort()+ path + "/";
+%>
+<!DOCTYPE HTML>
+<html>
+<head>
+<base href="<%=basePath%>">
+<link href="static/assets/global/plugins/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css"/> 
+<link href="resource/css/style.css" rel="stylesheet"  type="text/css"/>
+</head>
+
+<body>
+	<section class="w1000 mc split_header">
+		<header class="nav_title fw f20">Modify Password</header><br>
+		<form action="admin/user/modifyPassword">
+			<div class="min_fix w310">
+				<label>UserName</label> 
+				<input type="text" class="form-control" name="username"  id="username" placeholder="UserName">
+				<span id="user" style="color: Red; display: none; font-size: 10pt; font-weight: bold; font-family: Andalus;">用户名不能为空</span>
+			</div><br>
+			<div class="min_fix w310">
+				<label>Password</label>
+				<input type="password" class="form-control" name="password" id="password1" placeholder="Password">
+			</div><br>
+			<div class="min_fix w310">
+				<label>Confirm Password</label>
+				<input type="password" class="form-control" name="password2"  id="password2" placeholder="Password" ><br>
+				<span id="pass" style="color: Red; display: none; font-size: 10pt; font-weight: bold; font-family: Andalus;">输入的两次密码不一致</span>
+			</div><br>
+			<div class="min_fix w310">
+				<button id="button" type="submit" class="btn btn-info">Submit</button>
+			</div>
+		</form>
+	</section>
+<script src="static/assets/global/plugins/jquery-1.4.4.min.js" type="text/javascript"></script>	
+<script>
+		//用户校验
+		$("#username").blur(function(){
+			
+			var username=$("#username").val();
+			
+			$.ajax({
+				url: 'admin/user/queryUserIsExit',
+				type: 'POST',
+				dataType:'Json',
+				data:"username="+username,
+				success: function(msg) {
+					
+					alert(msg);
+				   }
+				
+			});
+			
+			
+		});
+		//密码校验
+		$("#password2").blur(function(){
+			
+			var password1=$("#password1").val();
+			var password2=$("#password2").val();
+			
+			if(password1==password2){
+				
+				$("#pass").hide();
+				$("#button").removeAttr("disabled");
+			}else{
+				
+				$("#pass").show();
+				$("#button").attr({"disabled":"disabled"});
+			}
+		});
+</script>
+</body>
+</html>
+
+

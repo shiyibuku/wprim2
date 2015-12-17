@@ -1,0 +1,127 @@
+package com.ninemax.controller;
+
+import java.util.List;
+import com.jfinal.plugin.activerecord.Record;
+import com.ninemax.controller.base.BaseController;
+import com.ninemax.service.IUserService;
+import com.ninemax.service.impl.UserServiceImpl;
+
+@SuppressWarnings("unchecked")
+public class UserController extends BaseController {
+	
+	private IUserService userService = new UserServiceImpl();
+	
+	public void save(){
+		
+		userService.save(getPara("username"),getPara("password"),getPara("country"),getPara("editDep"),getPara("address"),getPara("phone"),getPara("fax"),getPara("email"),getRequest().getParameterValues("role"));
+		redirect("/admin/user/index");
+	}
+	
+	public void logout(){
+		getSession().invalidate();
+		render("/index.jsp");
+	}
+	
+	public void newUser(){
+		Record user = getSessionAttr("curr_user");
+		if(user != null && user.getStr("UserName").equals("administrator")){
+			setAttr("countryList", userService.findAllCountry());
+			setAttr("roleList", userService.findRoles());
+			render("/user/new.jsp");
+		}
+	}
+	
+	public void index(){
+		//setAttr("userList",userService.findRoleByIds());
+		setAttr("userList", userService.findAll());
+		render("/user/list.jsp");
+	}
+	
+	public void login(){
+		Record user = userService.login(getPara("username"),getPara("password"));
+		if(user != null){
+			setSessionAttr("curr_user", user);
+			redirect("/admin/user/home");
+		}else{
+			render("/index.jsp");
+		}
+	}
+	//跳转注册页面
+	public void register(){
+		
+		render("/register/register.jsp");
+	}
+	//跳转到修改密码页面
+	public void forgotpassword(){
+		
+		render("/user/password.jsp");
+	}
+	//注册验证
+	public void registerVirify(){
+		//验证邮箱是否存在
+		Record user=userService.EmailVerify(getPara("Email"));
+		
+		if(user!=null){
+			
+			render("/register/warning.jsp");
+		}else{
+			
+			userService.VerifyPass(getPara("Email"), getPara("Password"));
+			
+			render("/index.jsp");
+		}
+		
+	}
+	//修改密码
+	public void modifyPassword(){
+		
+		userService.ModifiPass(getPara("UserName"), getPara("Password"));
+		
+		render("/index.jsp");
+	}
+	public void home(){
+		render("/home/home.jsp");
+	}
+	public void delete(){
+		
+		userService.delete(getPara("id"));
+		
+		redirect("/admin/user/index");
+	}
+	
+	//查询用户信息
+	public void queryUser(){
+			//查询用户
+			Record user=userService.queryData(getPara("id"));
+			//用户绑定的角色
+			List<Record> role1= userService.FindRoleByUserId(getPara("id"));
+			//所有国家
+			List<Record>list=(List<Record>)userService.findAllCountry();
+			//所有角色
+			List<Record> role2=userService.findRoles();
+			//移除用户绑定的角色
+			userService.RoleRemove(role1, role2);
+			//移除用户已有的国家
+			userService.CountryRemove(user, list);
+			
+			setAttr("countryList", list);
+			
+			setAttr("role2",role2);
+			
+			setAttr("role1",role1);
+			
+			setAttr("user", user);
+			
+			render("/user/update.jsp");
+	
+	}
+	//更新用户信息
+	public void update(){
+		
+		userService.update(getPara("userid"),getPara("username"),getPara("password"),getPara("country"),getPara("editDep"),getPara("address"),getPara("phone"),getPara("fax"),getPara("email"),getRequest().getParameterValues("role"));
+		
+		redirect("/admin/user/index");
+	}
+	
+	
+}

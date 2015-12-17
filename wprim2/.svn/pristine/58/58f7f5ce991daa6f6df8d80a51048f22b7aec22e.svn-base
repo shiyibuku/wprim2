@@ -1,0 +1,40 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%
+String path = request.getContextPath();
+String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.getServerPort()+path+"/";
+%>
+<!DOCTYPE html>
+<html>
+<head>
+	<base href="<%=basePath%>">
+	<meta charset="utf-8">
+	<link href="static/css/style.css" rel='stylesheet' type='text/css' />
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Wprim2.0</title>
+	<link href="static/font/googlefonts.css" rel='stylesheet' type='text/css'>
+	<style>
+		body{
+			background-color:#A1C6D8
+		}
+	</style>
+</head>
+<body>
+	 <div class="main">
+		<div class="login-form">
+			<h1>Wprim Login</h1>
+			<div class="head">
+				<img src="static/images/user.png"/>
+			</div>
+			<form action="admin/user/login" method="post">
+					<input type="text" name="username" autofocus class="text" placeholder="USERNAME OR EMAIL">
+					<input type="password" name="password" placeholder="PASSWORD">
+					<div class="submit">
+						<input type="submit" value="LOGIN" >
+					</div>
+				<p><a href="admin/user/register">Sign Up</a></p><br>
+				<p><a href="admin/user/forgotpassword">Forgot Password ?</a></p>
+			</form>
+		</div>
+		</div>
+</body>
+</html>

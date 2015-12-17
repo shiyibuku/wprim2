@@ -1,0 +1,31 @@
+package com.ninemax.service;
+
+import javax.servlet.http.HttpServletResponse;
+
+import org.dom4j.DocumentException;
+
+import com.jfinal.plugin.activerecord.Page;
+import com.jfinal.plugin.activerecord.Record;
+import com.jfinal.upload.UploadFile;
+import com.ninemax.model.Article;
+
+public interface IArticleService {
+
+	// 导入期刊论文的xml文件数据
+	Object importXml(UploadFile xmlFile, Record curr_user)
+			throws DocumentException;
+
+	// 根据具体期刊的id查找期刊所含的论文
+	Page<Record> findArticlesByJournalVolumeId(int journalVolumeId,
+			int handlePageNumber);
+
+	// 根据论文id查找论文信息
+	Object findArticleById(Integer articleId);
+
+	// 论文保存
+	void saveArticle(UploadFile articleFile, Record user, String[] authorList,
+			String[] affiliationList, Article article,int journalVolumeId);
+
+	void downloadAppendix(HttpServletResponse response, String article);
+
+}

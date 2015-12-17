@@ -1,0 +1,24 @@
+package com.ninemax.service.impl;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import com.jfinal.plugin.activerecord.Record;
+import com.jfinal.upload.UploadFile;
+import com.ninemax.service.IArticleService;
+import com.ninemax.util.RoleName;
+import com.ninemax.util.UserUtil;
+
+public class ArticleServiceImpl implements IArticleService {
+
+	@Override
+	public Object importXml(UploadFile xmlFile, Record curr_user) {
+		//检查当前用户是否有导入期刊论文数据的权限
+		//系统管理员、期刊编辑部、国家数据管理员分别可以导入全部、本编辑部、本国的期刊论文数据
+		if(UserUtil.haveRole(curr_user, RoleName.SYSTEMADMINISTRATOR)){
+			
+		}
+		return null;
+	}
+
+}

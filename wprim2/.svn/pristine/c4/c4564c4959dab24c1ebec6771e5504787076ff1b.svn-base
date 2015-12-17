@@ -1,0 +1,193 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%
+String path = request.getContextPath();
+String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.getServerPort()+path+"/";
+%>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<base href="<%=basePath%>">
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<title>WPRIM Candidate Journal Selection System</title>
+	<link href="static2/css/style.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div class="header"></div>
+<div class="container">
+  <div class="UserStatus">
+    <span class="a_img"><img src="static2/images/u_info.gif" align="middle" width="20" height="17" style="line-height: 17px;" /></span>&nbsp;Hello <span class="blue_color">sleepless</span>! </div>
+  <div class="main">
+    <div id="left">
+      <div class="l_nav">
+        <ul>
+          <li>
+            <h1>WPRIM</h1>
+          </li>
+          <li>
+            <a href="#">Home</a>
+          </li>
+          <li>
+            <a href="#">Website</a>
+          </li>
+          <li>
+            <a href="#">Overview</a>
+          </li>
+          <li>
+            <a href="#">Journal Selection Criteria</a>
+          </li>
+        </ul>
+        <ul>
+          <li>
+            <h1>Functions</h1>
+          </li>
+          <li>
+            <a href="e">Set Journal</a>
+          </li>
+        </ul>
+        <ul>
+          <li>
+            <h1>Settings</h1>
+          </li>
+          <li>
+            <a href="e">Logout</a>
+          </li>
+        </ul>
+        <ul>
+          <li>
+            <h1>Journal Manage</h1>
+          </li>
+          <li>
+            <a href="admin/journal/createJournal">Journal Create</a>
+          </li>
+           <li>
+            <a href="admin/journal/createJournalVolume">JournalVolume Create</a>
+          </li>
+           <li>
+            <a href="admin/journal/queryJournal?JournalId=2">Journal Update</a>
+          </li>
+           <li>
+            <a href="admin/journal/createArticle">Article Create</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+    <div id="right">
+    <div class="r_top"></div>
+      <div class="r_main">
+        <div style="margin-bottom: 5px;">WPRIM &gt;
+          <a href="index.jsp">Home</a>
+          &gt;
+          <span>Set Journal </span></div>
+        <table width="100%" border="0" align="center" cellpadding="0" cellspacing="0">
+          <tbody>
+            <tr>
+              <td align="left" valign="middle" style="padding-right:10px;"><select name="country2" id="country2" class="lm1" onchange="findListByQuery();">
+                  <option value="">---All Countries ---</option>
+                  <option value="CHN">China</option>
+                </select></td>
+              <td height="45" align="left" valign="middle" style="padding-right:10px;"><select name="country" id="country" class="lm1" onchange="findListByQuery();">
+                  <option value="">---All Years ---</option>
+                  <option value="CHN">2015</option>
+                </select></td>
+              <td width="580" height="45" align="left" valign="middle" style="padding-right:10px;"><input name="queryStr" value="" id="queryStr" onkeydown="enterIn(event);" onblur="check(),findListByQuery();return false;" type="text" class="b5" style="width:585px;"></td>
+              <td width="75" height="45" valign="middle"><span class="btn" style="float:right; margin-right:0;">
+                <a href="javascript:void(0)" onclick="findListByQuery();return false;">Search</a>
+                </span></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="hr"></div>
+        <div class="cz">
+          <span class="btn">
+          <a href="javascript:void(0)" onclick="loadAddEntity();return false;">Submit Journal Information</a>
+          </span>
+          <span class="btn">
+          <a href="javascript:void(0)" onclick="delInfo();return false;">Delete Journal</a>
+          </span>
+          <!--  -->
+          <span class="btn">
+          <a href="javascript:void(0)" onclick="uploadEntity();return false;">Upload Attachment</a>
+          </span>
+        </div>
+        <table width="100%" border="0" cellspacing="0" cellpadding="4" class="table_list">
+          <tr>
+            <th height="35" scope="col"><input type="checkbox" name="ifAll" onclick="checkAll()" title="全选"></th>
+            <th scope="col"> Year</th>
+            <th scope="col">Country</th>
+            <th scope="col"> Journal Title </th>
+            <th scope="col">Sample</th>
+            <th scope="col">Remarks</th>
+            <th scope="col">Agree</th>
+            <th scope="col">Disagree</th>
+          </tr>
+          <tr>
+            <td><input type="checkbox" name="ifAll" onclick="checkAll()" title="全选"></td>
+            <td>2015</td>
+            <td>CHN(China)</td>
+            <td>Chinese Journal of Cellular and Molecular Immunology</td>
+            <td scope="col"> 1.
+              <a title="sample1" href="../kbe_images/pdf/CHN/20150611120157-4a5f73ff-a2c1-4977-bc1c-436a59298824.pdf" target="blank"><img src="static2/images/pdf.png" align="absmiddle"></a></td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox" name="ifAll2" onclick="checkAll()" title="全选" /></td>
+            <td>2015</td>
+            <td>CHN(China)</td>
+            <td>Journal of Modern Laboratory Medicine</td>
+            <td scope="col"> 1.
+              <a title="sample1" href="../kbe_images/pdf/CHN/20151124172143-8610f9b7-be79-45ff-8e80-227c7763bbaa.pdf" target="blank"><img src="static2/images/pdf.png" align="absmiddle"></a>
+              2.
+              <a title="sample2" href="../kbe_images/pdf/CHN/20151124172512-cd4e6e70-227d-442c-9bdd-968014e3535a.pdf" target="blank"><img src="static2/images/pdf.png" align="absmiddle"></a>
+              &nbsp; </td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox" name="ifAll3" onclick="checkAll()" title="全选" /></td>
+            <td>2015</td>
+            <td>CHN(China)</td>
+            <td>World Journal of Emergency Medicine</td>
+            <td>1.
+              <a title="sample1" href="../kbe_images/pdf/CHN/20150611120157-4a5f73ff-a2c1-4977-bc1c-436a59298824.pdf" target="blank"><img src="static2/images/pdf.png" alt="" align="absmiddle" /></a></td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox" name="ifAll4" onclick="checkAll()" title="全选" /></td>
+            <td>2015</td>
+            <td>CHN(China)</td>
+            <td>ournal of Leukemia &amp; Lymphoma</td>
+            <td>1.
+              <a title="sample1" href="../kbe_images/pdf/CHN/20150611120157-4a5f73ff-a2c1-4977-bc1c-436a59298824.pdf" target="blank"><img src="static2/images/pdf.png" alt="" align="absmiddle" /></a></td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td>
+          </tr>
+        </table>
+        <div class="page">
+          <div style="float:left; margin-top:15px;">Total:&nbsp;<span class="jsjgsz">24</span>&nbsp;,&nbsp;<span class="jsjgsz">1/2</span></div>
+          <div id="pagination_down" class="pagination">
+            <span class="cublue">Show 20</span><span title="First Page"><img src="static2/images/pagefirst.gif" border="0" /></span><span title="Previous Page"><img src="static2/images/pageprevious.gif" border="0" /></span><span title="Next Page">
+            <a href="javascript:jsPager2Page(2);"><img src="static2/images/pagenext.gif" border="0" /></a>
+            </span><span title="Last Page">
+            <a href="javascript:jsPager2Page(2);"><img src="static2/images/pagelast.gif" border="0" /></a>
+            </span><span>&nbsp;Page:&nbsp;
+            <input type="text" maxlength="8" class="pageInput" id="pageInput2" value="1" title="Input page" onkeypress="return jPager.formatInputPage(event);" onfocus="this.select()" />
+            &nbsp;&nbsp;
+            <a href="#" onclick="javascript:jsPager2Page(document.getElementById('pageInput2').value);"><img align="text-bottom" src="static2/images/pagego.jpg" border="0" /></a>
+            </span></div>
+        </div>
+      </div>
+      <div class="r_bot"></div>
+    </div>
+  </div>
+</div>
+<div class="footer">
+  <div class="copyright"> ©2012 Regional Journal Selection Committee, WHO West Pacific Region Office. All right reserved. </div>
+</div>
+</body>
+</html>

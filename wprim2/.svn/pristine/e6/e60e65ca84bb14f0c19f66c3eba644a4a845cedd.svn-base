@@ -1,0 +1,80 @@
+package com.ninemax.controller;
+
+
+import org.dom4j.DocumentException;
+import com.jfinal.plugin.activerecord.Page;
+import com.jfinal.plugin.activerecord.Record;
+import com.jfinal.upload.UploadFile;
+import com.ninemax.controller.base.BaseController;
+import com.ninemax.model.Article;
+import com.ninemax.service.IArticleService;
+import com.ninemax.service.IJournalService;
+import com.ninemax.service.impl.ArticleServiceImpl;
+import com.ninemax.service.impl.IJournalServiceImpl;
+import com.ninemax.util.PageNumberUtil;
+
+public class ArticleController extends BaseController {
+
+	private static IArticleService articleService = new ArticleServiceImpl();
+	private static IJournalService journalService = new IJournalServiceImpl();
+	
+	//查找论文信息
+	public void articleDetail(){
+		setAttr("article", articleService.findArticleById(getParaToInt("articleId")));
+		render("/article/article_detail.jsp");
+	}
+	
+	//根据具体期刊的id查找期刊所含论文信息和期刊名录的信息
+	public void articleList(){
+		int journalVolumeId = getParaToInt("journalVolumeId");
+		Page<Record> articleList = articleService.findArticlesByJournalVolumeId(journalVolumeId,PageNumberUtil.handlePageNumber(getPara("pageNumber")));
+		setAttr("articleList", articleList);
+		setAttr("pageNumberList", journalService.countPageNumberList(articleList.getPageNumber(), articleList.getTotalPage()));
+		setAttr("journal", journalService.findJournalByJournalVolumeId(journalVolumeId));
+		setAttr("journalVolumeId", journalVolumeId);
+		render("/article/article_list.jsp");
+	}
+	
+	//导入期刊论文xml文件数据
+	public void importXml() throws DocumentException{
+		Record curr_user = getSessionAttr("curr_user");
+		if(curr_user == null){
+			render("/index.jsp");
+		}else{
+			setSessionAttr("importResult", articleService.importXml(getFile("xmlFile"),curr_user));
+			redirect("/admin/journal/website",true);
+		}
+	}
+	
+	// 跳转到论文创建
+	public void createArticle() {
+
+		render("/article/createArticle.jsp");
+	}
+
+	// 论文保存
+	public void saveArticle() {
+		//上传论文
+		UploadFile articleFile=getFile("article");
+		
+		if(articleFile==null){
+			
+			render("/article/createArticle.jsp");
+		}
+		else{
+			// 获得用户信息
+			Record user=getSessionAttr("curr_user");
+			
+			String[] authorList=getRequest().getParameterValues("Author");
+			String[] affiliationList=getRequest().getParameterValues("Affiliation");
+			
+			Article article = getModel(Article.class);
+			
+			articleService.saveArticle(articleFile, user, authorList, affiliationList,article);
+	
+			render("/home.jsp");
+		
+		}
+	}
+
+}

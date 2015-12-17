@@ -1,0 +1,48 @@
+package com.ninemax.service.impl;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Record;
+import com.ninemax.model.Journal;
+import com.ninemax.service.IJournalService;
+
+public class IJournalServiceImpl implements IJournalService {
+	@Override
+	public Record findAll() {
+		// TODO Auto-generated method stub
+		List<Record> journal=new ArrayList<Record>();
+		journal=Db.find("");
+		return (Record) journal;
+	}
+	
+	@Override
+	public void save(String journalTitle,String VernacularJournalTitle,String country,String publisher,String ISSN,String EISSN,String ElectronicLinks,String EditorInChief,String EditorEmail,String Abbreviation,String StartYear,String suspendedtime,String Description,String volume,String issue,Date PubDate,Date CRTIME,String CRUSER,String FIRSTLETTER,String CountrySimple,String review_status,int hc) {
+		// TODO Auto-generated method stub
+		Journal journal= new Journal().set("journalTitle", journalTitle).set("VernacularJournalTitle", VernacularJournalTitle).set("country", country).set("publisher", publisher).set("ISSN", ISSN).set("EISSN", EISSN).set("ElectronicLinks", ElectronicLinks).set("EditorInChief", EditorInChief).set("EditorEmail", EditorEmail).set("Abbreviation", Abbreviation).set("StartYear", StartYear).set("suspendedtime", suspendedtime).set("Description", Description).set("volume", volume).set("issue", issue).set("PubDate", PubDate).set("CRTIME", CRTIME).set("CRUSER", CRUSER).set("FIRSTLETTER", FIRSTLETTER).set("CountrySimple", CountrySimple).set("review_status", review_status).set("hc", hc);
+		journal.save();
+	}
+	
+	@Override
+	public Record queryJournal(String id){
+		
+		return Db.findById(" ", id);
+	}
+	
+	@Override
+	public void update() {
+		// TODO Auto-generated method stub
+		Db.update(" ");
+	}
+
+	@Override
+	public void delete(String id) {
+		// TODO Auto-generated method stub
+		Db.deleteById("","",id);
+	}
+
+	
+
+}

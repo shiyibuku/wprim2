@@ -1,0 +1,120 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<jsp:include page="/include/journalhome.jsp"></jsp:include>
+<div id="right">
+    <div class="r_top"></div>
+      <div class="r_main">
+       <div style="margin-bottom: 5px;">WPRIM &gt;
+          <a href="index.jsp">Home</a>&gt;
+          <span> Journal Create</span>
+        </div>
+    	<form action="admin/journal/save">
+    		<h1>Basic Information</h1><br>
+    		<label>Country:</label>
+			<select  name=" " id=" ">
+				<option  value=" " >China</option>
+			</select>*<br>
+			<label>JournalTitle(in English):</label>
+			<input type="text" name=" " id=" "/>*<br>
+			<label>VemacularJournalTitle:</label>
+			<input type="text" name=" " id=" "/>*<br>
+			<label>Abbreviation:</label>
+			<input type="text" name=" " id=" "/><br>
+			<label>ISSN:</label>
+			<input type="text" name=" " id=" "/>-
+			<input type="text" name=" " id=" "/>*<br>
+			<label>EIISN:</label>
+			<input type="text" name=" " id=" "/>-
+			<input type="text" name=" " id=" "/><br>
+			<label>CN:</label>
+			<input type="text" name=" " id=" "/>-
+			<input type="text" name=" " id=" "/><br>
+			<label>StartYear:</label>
+			<input type="text" name=" " id=" "/><br>
+			<label>Language:</label>
+			<input type="text" name=" " id=" "/><br>
+			<label>Sponsor(in English):</label>
+			<input type="text" name=" " id=" "/><br>
+			<label>Sponsor(in Chinese):</label>
+			<input type="text" name=" " id=" "/><br>
+			<label>Supervisor(in English):</label>
+			<input type="text" name=" " id=" "/><br>
+			<label>Supervisor(in Chinese):</label>
+			<input type="text" name=" " id=" "/><br>
+			<label>Cover:</label>
+			<input type="file" name=" " id=" " value="选择文件"/><br>
+			<label>Description:</label>
+			<textarea  name=" " id=" "></textarea><br>
+			<h1>Contact Information</h1><br>
+			<label>EditionChief:</label>
+			<input type="text" name=" " id=" "/><br>
+			<label>OfficeAddress(in English):</label>
+			<input type="text" name=" " id=" "/><br>
+			<label>OfficeAddress(in Chinese):</label>
+			<input type="text" name=" " id=" "/><br>
+			<label>Postcode:</label>
+			<input type="text" name=" " id=" "/><br>
+			<label>TelephoneNumber:</label>
+			<input type="text" name=" " id=" "/><br>
+			<label>EditorEmail:</label>
+			<input type="text" name=" " id=" "/><br>
+			<label>Website:</label>
+			<input type="text" name=" " id=" "/><br>
+			<h1>Statistical Data</h1><br>
+			<label>Number of Issues(pre year):</label>
+			<input type="text" name=" " id=" "/><br>
+			<label>Number of Papers(pre year):</label>
+			<input type="text" name=" " id=" "/><br>
+			<label>Number of Editors:</label>
+			<input type="text" name=" " id=" "/><br>
+			<label>Number of Reviewers:</label>
+			<input type="text" name=" " id=" "/><br>
+			<label>Number of Intemational Reviewers:</label>
+			<input type="text" name=" " id=" "/><br>
+			<label>Acceptance Ratio:</label>
+			<input type="text" name=" " id=" "/><br>
+			<label>Average Number of References of each Paper:</label>
+			<input type="text" name=" " id=" "/><br>
+			<label>Fund Paper Ratio:</label>
+			<input type="text" name=" " id=" "/><br>
+			<label>Indexed by MEDLINE?:</label>
+			<input type="radio" name=" " id=" "/>YES
+			<input type="radio" name=" " id=" " checked/>NO<br>
+			<label>Indexed by SCI?:</label>
+			<input type="radio" name=" " id=" "/>YES
+			<input type="radio" name=" " id=" " checked/>NO<br>
+			<label>Open Access Status:</label>
+			<input type="radio" name=" " id=" "/>Ont OA
+			<input type="radio" name=" " id=" " checked/>DOAJ registered
+			<input type="radio" name=" " id=" "/>OA,but not registered in DOAJ <br>
+			<label>Public action fee of Papers:</label>
+			<input type="radio" name=" " id=" "/>Charged
+			<input type="radio" name=" " id=" " checked/>Not Charged<br>
+			<label>Journal Title:</label>
+			<input type="text"  name=" " id=" "/><br>
+			<label>Sample issue:</label>
+			<input type="file"  name=" " id=" " value="选择文件"/><br>
+			<h1>File List</h1>
+			<table>
+			<tr>
+			<th>
+			<label>Title</label>
+			</th>
+			<th>
+			<label>Date</label>
+			</th>
+			<th>
+			<label>Title</label>
+			</th>
+			</tr>
+			</table>
+			<button class=" ">Submit</button>
+    	</form>
+    </div>
+   	<div class="r_bot"></div>
+  </div>
+  </div>
+  <div class="footer">
+  <div class="copyright"> ©2012 Regional Journal Selection Committee, WHO West Pacific Region Office. All right reserved. </div>
+</div>
+  </body>
+</html>

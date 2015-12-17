@@ -1,0 +1,51 @@
+package com.ninemax.service;
+
+
+import java.util.List;
+
+import com.jfinal.plugin.activerecord.Record;
+
+public interface IUserService {
+
+	Record login(String para, String para2);
+
+	Object findAll(Record userRecord);
+
+	Object findAllCountry();
+	
+	void save(String para, String para2, String para3, String para4,
+			String para5, String para6, String para7, String para8,String[] para9);
+
+	boolean delete(String id, Record curr_user);
+
+	Record queryData(String id);
+
+	void update(Object curr_user, String para, String para2, String para3, String para4,
+			String para5, String para6, String para7, String para8,String para9,String[] para10);
+	
+	List<Record> findRoles();
+	
+	Object findRoleByUser();
+	
+	List<Record> FindRoleByUserId(String id);
+	
+	void RoleRemove(List<Record> role1, List<Record> role2);
+	
+	void CountryRemove(Record user, List<Record> list);
+	
+	Record EmailVerify(String email);
+	
+	void VerifyPass(String email,String password);
+	
+	void ModifyPass(String email,String password);
+	
+	Record UserIsExit(String username);
+
+	boolean checkForAddUser(Object curr_user);
+
+	Object findCountry(Record user);
+
+	Object findRoles(Record user);
+
+	List<Record> findRolesForUser(Object curr_user);
+}

@@ -1,0 +1,24 @@
+package com.ninemax.service;
+
+
+import com.jfinal.plugin.activerecord.Record;
+
+public interface IJournalService {
+	//新增期刊名录
+	void save(String args1,String args2,String args3,String args4,String args5,String args6,String args7,String args8,String args9,String args10,String args11,String args12,String args13,String args14,String args15,String args16,String args17);
+	//查询某一个
+	Record queryJournal(String id);
+	//更新
+	void update();
+	//删除
+	void delete(String id);
+	//查找期刊名录
+	Object search(Record curr_user, String pageNumber, String journalTitle, String country,
+			String reviewStatus);
+	//计算显示页码
+	Object countPageNumberList(int handlePageNumber, int size);
+	//获取所有的评审状态
+	Object getAllReviewStatus();
+	//评审操作
+	Object review(Record sessionAttr, String para, String[] parameterValues);
+}

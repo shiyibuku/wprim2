@@ -1,0 +1,15 @@
+package com.ninemax.jfinalIndex.routes;
+
+import com.jfinal.config.Routes;
+import com.ninemax.controller.HomeController;
+
+public class WxRoutes extends Routes {
+
+	@Override
+	public void config() {
+		//配置访问Controller访问路径
+		//add("/login",LoginController.class);
+		add("/home",HomeController.class);
+	}
+
+}

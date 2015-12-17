@@ -1,0 +1,81 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn"%>
+<jsp:include page="/include/journalhome.jsp"></jsp:include>
+<div id="right">
+    <div class="r_top"></div>
+      <div class="r_main">
+       <div style="margin-bottom: 5px;">
+          <a href="admin/journal/findAll">WPRIM</a> >
+          <span>Manage System</span>
+        </div>
+				<c:if test="${canAddUser }">
+					<span class="btn" style="margin-bottom:10px">
+			          	<a href="admin/user/newUser" id="newJournal">Add user</a>
+			        </span>
+				</c:if><br>
+				<table style="text-align:center" width="100%" border="0" cellspacing="0" cellpadding="4" class="table_list">
+					<tr>
+						<th>
+							<input type="checkbox">
+						</th>
+						<th>UserName</th>
+						<th style="text-align:center">Role</th>
+						<th>Country</th>
+						<th>EditDepartment</th>
+						<th>Address</th>
+						<th>Phone</th>
+						<th style="text-align:center">Fax</th>
+						<th style="text-align:center">Email</th>
+						<th>Operation</th>
+					</tr>
+					<c:forEach items="${userList }" var="user">
+						<tr>
+							<td>
+								<input type="checkbox">
+							</td>
+							<td>${user.UserName }</td>
+							<td>
+								<c:forEach items="${user.roles }" var="role" varStatus="status">
+									<c:choose>
+										<c:when test="${status.index == (fn:length(user.roles) - 1) }">
+											${role.Rname_en_US }
+										</c:when>
+										<c:otherwise>
+											${role.Rname_en_US }-
+										</c:otherwise>
+									</c:choose>
+								</c:forEach>
+							</td>
+							<td>${user.Country }</td>
+							<td>${user.EditDep }</td>
+							<td>${user.Address }</td>
+							<td>${user.Phone }</td>
+							<td>${user.Fax }</td>
+							<td>${user.Email }</td>
+							<td>
+								<a href="admin/user/queryUser?id=${user.UserId}">Update</a>
+								<a href="javascript:;" class="delUser" ref="${user.UserId }">Delete</a>
+							</td>
+						</tr>
+					</c:forEach>
+				</table>
+			<br>
+   	 </div>
+   	<div class="r_bot"></div>
+  </div>
+  </div>
+  <div class="footer">
+  <div class="copyright"> ©2015 Regional Journal Selection Committee, WHO West Pacific Region Office. All right reserved. </div>
+</div>
+<script src="static/js/jquery-1.11.2.min.js"></script>
+<script>
+	$(".delUser").click(function(){
+		var userId = $(this).attr("ref");
+		if(confirm("Are you sure to delete this user")){
+			window.location.href = "admin/user/delete?id=" + userId;
+		}
+	});
+</script>
+ </body>
+</html>

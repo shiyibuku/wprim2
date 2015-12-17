@@ -1,0 +1,37 @@
+<%@ page language="java" import="java.util.*" pageEncoding="ISO-8859-1"%>
+<%
+String path = request.getContextPath();
+String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.getServerPort()+path+"/";
+%>
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <base href="<%=basePath%>">
+    <title>Create JournalVolume</title>
+  </head>
+ <body>
+   	<p>Create JournalVolume</p>
+	   	<form action="admin/journal/saveJournalVolume">
+	   		<input type="hidden" name="journalVolume.JID" value="1">
+		   	<label>Volume</label>
+		   	<input type="text" name="journalVolume.Volume" class=""/>
+		   	<label>Issue</label>
+		   	<input type="text" name="journalVolume.Issue" class=""/>
+		   	<label>Cruser</label>
+		   	<input type="text" name="journalVolume.cruser" class=""/>
+		   	<label>PubYear</label>
+		   	<input type="text" name="journalVolume.PubYear" class=""/>
+		   	<label>PubMonth</label>
+		   	<input type="text" name="journalVolume.PubMonth" class=""/>
+		   	<label>PubDay</label>
+		   	<input type="text" name="journalVolume.PubDay" class=""/>
+		   	<label>PubDate</label>
+		   	<input type="text" name="journalVolume.PubDate" class=""/>
+		   	<label>CrTime</label>
+		   	<input type="text" name="journalVolume.crtime" class=""/>
+		   	<button class="btn btn-info" value="Submit">Submit</button>&nbsp
+			<button class="btn btn-info" value="Cancel" onclick="window.close">Cancel</button>
+   		</form>
+ </body>
+</html>

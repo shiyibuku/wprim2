@@ -1,0 +1,10 @@
+package com.ninemax.controller;
+
+import com.ninemax.controller.base.BaseController;
+
+public class HomeController extends BaseController {
+	
+	public void home(){
+		render("/index.jsp");
+	}
+}

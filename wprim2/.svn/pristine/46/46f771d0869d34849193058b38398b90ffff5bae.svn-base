@@ -1,0 +1,201 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<jsp:include page="/include/journalhome.jsp"></jsp:include>
+<div id="right">
+    <div class="r_top"></div>
+      <div class="r_main">
+       <div style="margin-bottom: 5px;">WPRIM &gt;
+          <a href="index.jsp">Home</a>&gt;
+          <span>Article Create</span>
+        </div>
+   <form id="MyForm" method="post" action="admin/article/saveArticle" enctype="multipart/form-data">
+    <input type="hidden" name="journalVolumeId" value="${journalVolumeId}">
+    <table width="100%" border="0" cellspacing="0" cellpadding="4" class="table_list">	
+    	<tr>
+		    <th colspan="2"> &nbsp;&nbsp; <b>Basic Information</b> </th>
+		</tr>
+		 <tr>
+    		<td style="width: 220px;">
+    			<label>Article Title:</label>
+    		</td>
+    		<td style="height: 35px;">
+				<input type="text" name="article.ArticleTitle" style="width:360px;"/>
+				<span style="color:red">*</span><br>
+			<td>
+		</tr>
+		<tr>
+    		<td style="width: 220px;">	
+				<label>Vernacular Title:</label>
+			</td>
+    		<td style="height: 35px;">
+				<input type="text" name="article.VernacularTitle" style="width:360px;"/>
+			</td>
+		</tr>
+		<tr>
+    		<td style="width: 220px;">
+				<label>MeSH:</label>
+			</td>
+			<td style="height: 35px;">
+				<input type="text" name="article.MeSH" style="width:360px;"/>
+			</td>
+		</tr>
+		<tr>
+    		<td style="width: 220px;">	
+			<label>First Page:</label>
+			</td>
+			<td style="height: 35px;">
+			<input type="text" name="article.FirstPage" style="width:360px;"/>
+			<span style="color:red">*</span><br>
+			</td>
+		</tr>
+		<tr>
+    		<td style="width: 220px;">
+			<label>Last Page:</label>
+			</td>
+			<td style="height: 35px;">
+			<input type="text" name="article.LastPage" style="width:360px;"/>
+			</td>
+		</tr>
+		<tr>
+    		<td style="width: 220px;">
+			<label>Language:</label>
+			</td>
+			<td style="height: 35px;">
+			<input type="text" name="article.Language" style="width:360px;"/>
+			</td>
+		</tr>
+		<tr>
+    		<td style="width: 220px;">
+			<label>Author</label>
+			<span>—</span>
+			<label>Affiliation:</label>
+			</td>
+			<td id="appendAuthor" style="height: 35px;">
+				<input type="text" name="Author" />
+				<span>—</span>
+				<input type="text" name="Affiliation" />
+				<input type="button" id="addBtn" value="add">
+				<br>
+			</td>
+		</tr>
+		<tr>
+    		<td style="width: 220px;">
+			<label>CollectiveName:</label>
+			</td>
+			<td style="height: 35px;">
+			<input type="text" name="article.CollectiveName" style="width:360px;"/>
+			</td>
+		</tr>
+		<tr>
+    		<td style="width: 220px;">
+			<label>Publication Type:</label>
+			</td>
+			<td style="height: 35px;">
+			<input type="text" name="article.PublicationType" style="width:360px;"/>
+			</td>
+		</tr>
+		<tr>
+    		<td style="width: 220px;">	
+			<label>ArticleId-DOI:</label>
+			</td>
+			<td style="height: 35px;">
+			<input type="text" name="article.DOI" style="width:360px;"/>
+			</td>
+		</tr>
+		<tr>
+			<td style="width: 220px;">	
+			<label>eg:</label>
+			</td>
+			<td style="height: 35px;">
+			10.1005/s-2007-985171
+			</td>
+		</tr>
+		<tr>
+    		<td style="width: 220px;">	
+			<label>ArticleId-URL:</label>
+			</td>
+			<td style="height: 35px;">
+			<input type="text" name="article.URL" style="width:360px;"/>
+			</td>
+		</tr>
+			<tr>
+			<td style="width: 220px;">	
+			<label>eg:</label>
+			</td>
+			<td style="height: 35px;">
+			http://www.baidu.com
+			</td>
+		</tr>
+		<tr>
+    		<td style="width: 220px;">
+			<label>Keywords:</label>
+			</td>
+			<td style="height: 35px;">
+			<input type="text" name="article.Keywords" style="width:360px;"/>
+			<span style="color:red">*Enter more than one content, separated by a comma</span><br>
+			</td>
+		</tr>
+		<tr>
+    		<td style="width: 220px;">
+			<label>Abstract:</label>
+			</td>
+			<td style="height: 75px;">
+			<textarea style="width: 360px; height: 100px; overflow: auto;" name="article.Abstract" ></textarea>
+			<p>
+		        &nbsp;&nbsp; Less than 1000 words.
+		    </p>
+			</td>
+		</tr>
+		<tr>
+    		<td style="width: 220px;">
+			<label>Article:</label>
+			</td>
+			<td style="height: 35px;">
+			<input type="file" name="article"><br>
+			<span>&nbsp;&nbsp;(PDF Document of the Latest Issue，including all pages!)</span>
+			</td>
+		</tr>	
+		</table><br>
+		<div class="cz">
+			<button  type="submit">Save</button>&nbsp;
+		</div>	
+    </form>
+    </div>
+   	<div class="r_bot"></div>
+  </div>
+  </div>
+  <div class="footer">
+  <div class="copyright"> ©2015 Regional Journal Selection Committee, WHO West Pacific Region Office. All right reserved. </div>
+</div>
+<script src="static/assets/global/plugins/jquery.min.js" type="text/javascript"></script>
+<script src="static/js/jquery.validate.min.js"></script>	
+	<script>
+		$(function(){
+			$("#MyForm").validate({
+			rules:{
+					'article.ArticleTitle':{
+						required:true,
+					},
+					'article.FirstPage':{
+						required:true,
+						digits:true,
+					},
+				},
+			messages:{
+					'article.ArticleTitle':{
+						required:"Your ArticleTitle is not allowed to be empty",
+					},
+					'article.FirstPage':{
+						required:"FirstPage is not allowed to be empty",
+						digist:"Must be an integer",
+					},
+				}
+				
+			});
+			$("#addBtn").click(function(){
+				$("#appendAuthor").append($('<input type="text" name="Author" /><span> — </span><input type="text" name="Affiliation" /><br>'));
+			});
+		});
+	</script>
+  </body>
+</html>

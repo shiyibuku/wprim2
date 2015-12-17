@@ -1,0 +1,1232 @@
+package com.ninemax.service.impl;
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
+import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
+
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Page;
+import com.jfinal.plugin.activerecord.Record;
+import com.jfinal.upload.UploadFile;
+import com.ninemax.model.Journal;
+import com.ninemax.model.JournalVolume;
+import com.ninemax.service.IJournalService;
+import com.ninemax.util.AddRecordList2Set;
+import com.ninemax.util.JournalStatus;
+import com.ninemax.util.RoleName;
+import com.ninemax.util.Role_ActionStatus;
+import com.ninemax.util.UserUtil;
+
+public class IJournalServiceImpl implements IJournalService {
+
+	// 期刊名录保存
+	@Override
+	public void save(String journalTitle, String VernacularJournalTitle,
+			String country, String publisher, String ISSN1, String ISSN2,
+			String EISSN1, String EISSN2, String CN1, String CN2,
+			String EditorInChief, String EditorEmail, String Abbreviation,
+			String StartYear, String start_volume, String start_issue,
+			UploadFile path, String Description, String OfficeAddress,
+			String TelephoneNumber, String WebSite, String IssuesNumber,
+			String EditorsNumber, String ReviewersNumber,
+			String InternationReviewersNumber, String ReceivedRatioNumber,
+			String EachPaper, String PublishedRatioNumber, String[] OtherKu,
+			String AccessStatus, String FeePapers, UploadFile filePath,
+			Record curr_user, String saveButton, String edit_department,
+			String Language, String Sponsor) {
+		SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+		Journal journal = new Journal().set("journalTitle", journalTitle)
+				.set("VernacularJournalTitle", VernacularJournalTitle)
+				.set("country", country).set("publisher", publisher)
+				.set("ISSN", ISSN1 + "-" + ISSN2)
+				.set("EISSN", EISSN1 + "-" + EISSN2).set("CN", CN1 + "-" + CN2)
+				.set("EditorInChief", EditorInChief)
+				.set("EditorEmail", EditorEmail)
+				.set("Abbreviation", Abbreviation).set("StartYear", StartYear)
+				.set("start_volume", start_volume)
+				.set("start_issue", start_issue)
+				.set("cover", "/upload/picture/" + path.getFileName())
+				.set("Description", Description)
+				.set("officeaddress", OfficeAddress)
+				.set("telephonenumber", TelephoneNumber)
+				.set("website", WebSite).set("IssuesNumber", IssuesNumber)
+				.set("EditorsNumber", EditorsNumber)
+				.set("ReviewersNumber", ReviewersNumber)
+				.set("InternationReviewersNumber", InternationReviewersNumber)
+				.set("ReceivedRatioNumber", ReceivedRatioNumber)
+				.set("EachPaper", EachPaper)
+				.set("PublishedRatioNumber", PublishedRatioNumber)
+				.set("AccessStatus", AccessStatus).set("FeePapers", FeePapers)
+				.set("CountrySimple", "/upload/file/" + filePath.getFileName())
+				.set("edit_department", edit_department)
+				.set("language", Language).set("Sponsor", Sponsor);
+		if ((OtherKu.length) != 0) {
+
+			String str = "";
+
+			for (int i = 0; i < OtherKu.length; i++) {
+
+				str += "," + OtherKu[i];
+
+			}
+			journal.set("OtherKu", str.substring(1));
+		}
+		// 添加UUID
+		journal.set("globalid", UUID.randomUUID().toString().replace("-", ""));
+		// 添加系统时间
+		journal.set("CRTIME", df.format(new Date()));
+		journal.set("PubDate", df.format(new Date()));
+		// 添加期刊创建时间、创建人
+		journal.set("createTime", df.format(new Date()));
+		journal.set("createPerson", curr_user.get("UserName"));
+		// 添加期刊提交状态
+		if (saveButton != null) {
+
+			journal.set("review_status", JournalStatus.UNSUBMITTED);
+
+		} else {
+
+			journal.set("review_status", JournalStatus.SUBMITTEDTONJSC);
+		}
+
+		journal.save();
+
+	}
+
+	// 查询某一期刊名录
+	@Override
+	public Record queryJournal(int id, Record curr_user) {
+		// 检查当前用户权限和期刊状态是否允许修改
+		// 1.检查当前用户,系统管理员、期刊编辑部、国家数据管理员允许修改
+		List<String> roleNames = new ArrayList<String>();
+		roleNames.add(RoleName.SYSTEMADMINISTRATOR);
+		roleNames.add(RoleName.JOURNALEDITORIALDEPARTMENT);
+		roleNames.add(RoleName.NATIONALDATAMANAGER);
+		roleNames.add(RoleName.NATIONALLIAISONER);
+
+		if (UserUtil.haveAnyOfRoles(curr_user, roleNames)) {
+			// 2.检查期刊状态，未提交的、评审通过的可以修改
+			// 2.检查期刊状态，未提交的期刊可以删除
+			Record journal = Db.findFirst(
+					"select * from WSSJOURNAL where JournalId = ?", id);
+			String reviewStatus = journal == null ? null : journal
+					.getStr("review_status");
+			// 2.根据当前的期刊名录状态去查询评审记录表中的处理时间
+			Record handle_time = Db
+					.findFirst(
+							"select handle_time from Wprim_Review_Log where new_status = ?",
+							reviewStatus);
+			// 2.1获得期刊名录处理时间的年份
+			String handle_time_year = handle_time.getStr("time").toString()
+					.substring(0, 3);
+			// 2.2获得当前期刊名录的年份
+			Calendar c = Calendar.getInstance();
+			int year = c.get(Calendar.YEAR);
+
+			if (reviewStatus != null
+					&& (reviewStatus.equals(JournalStatus.UNSUBMITTED) || reviewStatus
+							.equals(JournalStatus.APPROVEDBYRJSC))
+					|| (reviewStatus.equals(JournalStatus.REJECTEDBYNJSC) || reviewStatus
+							.equals(JournalStatus.REJECTEDBYRJSC))
+					&& ((year - Integer.valueOf(handle_time_year)) > 0)) {
+				return Db.findById("WSSJOURNAL", "JournalId", id);
+			}
+		}
+		return null;
+	}
+
+	@Override
+	public void delete(int journalId, Record curr_user) {
+		// 检查当前用户和期刊状态是否允许删除
+		// 1.检查当前用户权限，系统管理员、期刊编辑部、国家数据管理员/国家联络员可以删除
+		List<String> roleNames = new ArrayList<String>();
+		roleNames.add(RoleName.SYSTEMADMINISTRATOR);
+		roleNames.add(RoleName.JOURNALEDITORIALDEPARTMENT);
+		roleNames.add(RoleName.NATIONALDATAMANAGER);
+		roleNames.add(RoleName.NATIONALLIAISONER);
+		if (UserUtil.haveAnyOfRoles(curr_user, roleNames)) {
+			// 2.检查期刊状态，未提交的期刊可以删除
+			Record journal = Db.findFirst(
+					"select * from WSSJOURNAL where JournalId = ?", journalId);
+			String reviewStatus = journal == null ? null : journal
+					.getStr("review_status");
+			if (reviewStatus != null
+					&& reviewStatus.equals(JournalStatus.UNSUBMITTED)) {
+				Db.deleteById("WSSJOURNAL", "JournalId", journalId);
+			}
+		}
+	}
+
+	@Override
+	public Object search(Record curr_user, String pageNumber,
+			String journalTitle, String country, String reviewStatus,
+			String year) {
+		// 预处理
+		int intPageNumber = Integer.valueOf(pageNumber);
+		int pageSize = 10;
+
+		String userCountry = "";
+		Integer userId = null;
+
+		if (curr_user != null) {
+			userCountry = curr_user.getStr("Country");
+			userId = curr_user.getInt("UserId");
+		}
+		journalTitle = ((journalTitle == null) ? "" : journalTitle);
+		country = ((country == null) ? "" : country);
+		reviewStatus = ((reviewStatus == null) ? "" : reviewStatus);
+
+		// 结果集
+		Set<Integer> journalIds = new HashSet<Integer>();
+
+		// 1.查找期刊结果集
+		// 系统管理员可以看到所有期刊
+		if (UserUtil.haveRole(curr_user, RoleName.SYSTEMADMINISTRATOR)) {
+			List<Record> journalRecords = Db
+					.find("select JournalId from WSSJOURNAL where journalTitle like '%"
+							+ journalTitle
+							+ "%' and country like '%"
+							+ country
+							+ "%' and review_status like '%"
+							+ reviewStatus
+							+ "%'");
+			journalIds = AddRecordList2Set.add(journalIds, journalRecords);
+		}
+		// 国家数据管理员和国家联络员可以看到本国所有期刊
+		if (UserUtil.haveRole(curr_user, RoleName.NATIONALDATAMANAGER)
+				|| UserUtil.haveRole(curr_user, RoleName.NATIONALLIAISONER)) {
+			List<Record> journalRecords = Db
+					.find("select JournalId from WSSJOURNAL where journalTitle like '%"
+							+ journalTitle
+							+ "%' and review_status like '%"
+							+ reviewStatus
+							+ "%' and country = '"
+							+ userCountry
+							+ "'");
+			journalIds = AddRecordList2Set.add(journalIds, journalRecords);
+		}
+		// 期刊所属编辑部可以看到所有本期刊编辑部的期刊
+		if (UserUtil.haveRole(curr_user, RoleName.JOURNALEDITORIALDEPARTMENT)) {
+			List<Record> journalRecords = Db
+					.find("select JournalId from WSSJOURNAL where journalTitle like '%"
+							+ journalTitle
+							+ "%' and review_status like '%"
+							+ reviewStatus
+							+ "%' and country = '"
+							+ userCountry
+							+ "' and edit_department = '"
+							+ curr_user.getStr("EditDep") + "'");
+			journalIds = AddRecordList2Set.add(journalIds, journalRecords);
+		}
+		// 国家级期刊评委和国家级评委主席可以看到本国非未提交期刊
+		if (UserUtil.haveRole(curr_user, RoleName.NATIONALJOURNALREVIEWEXPERT)
+				|| UserUtil.haveRole(curr_user,
+						RoleName.CHAIRMANOFNATIONALJOURNALREVIEWCOMMITTEE)) {
+			List<Record> journalRecords = Db
+					.find("select JournalId from WSSJOURNAL where journalTitle like '%"
+							+ journalTitle
+							+ "%' and country = '"
+							+ userCountry
+							+ "' and review_status != '"
+							+ JournalStatus.UNSUBMITTED
+							+ "' and review_status like '%"
+							+ reviewStatus
+							+ "%' and review_status != '"
+							+ JournalStatus.SUSPENDED + "'");
+			journalIds = AddRecordList2Set.add(journalIds, journalRecords);
+		}
+		// 国际期刊评委和评委主席可以看到所有提交到RJSC之后的期刊
+		if (UserUtil.haveRole(curr_user, RoleName.REGIONALJOURNALREVIEWEXPERT)
+				|| UserUtil.haveRole(curr_user,
+						RoleName.CHAIRMANOFREGIONALJOURNALREVIEWCOMMITTEE)) {
+			List<Record> journalRecords = Db
+					.find("select JournalId from WSSJOURNAL where journalTitle like '%"
+							+ journalTitle
+							+ "%' and country like '%"
+							+ country
+							+ "%' and review_status != '"
+							+ JournalStatus.UNSUBMITTED
+							+ "' and review_status != '"
+							+ JournalStatus.SUBMITTEDTONJSC
+							+ "' and review_status != '"
+							+ JournalStatus.REJECTEDBYNJSC
+							+ "' and review_status != '"
+							+ JournalStatus.SUSPENDED
+							+ "' and review_status like '%"
+							+ reviewStatus
+							+ "%'");
+			journalIds = AddRecordList2Set.add(journalIds, journalRecords);
+		}
+		// 未登录用户可以看到所有非未提交状态的期刊
+		if (curr_user == null) {
+			List<Record> journalRecords = Db
+					.find("select JournalId from WSSJOURNAL where journalTitle like '%"
+							+ journalTitle
+							+ "%' and country like '%"
+							+ country
+							+ "%' and review_status like '%"
+							+ reviewStatus
+							+ "%' and review_status != '"
+							+ JournalStatus.UNSUBMITTED
+							+ "' and review_status != '"
+							+ JournalStatus.SUSPENDED + "'");
+			journalIds = AddRecordList2Set.add(journalIds, journalRecords);
+		}
+
+		// 组织结果为一个类Page的对象
+		Record result = generatePage(journalIds, pageSize, intPageNumber, year);
+
+		List<Record> journals = result.get("list");
+		if (journals != null && journals.size() != 0) {
+			// 2.判断期刊是否可以修改、删除
+			// 2.1角色验证，系统管理员、期刊编辑部、国家数据管理员可以进行修改、删除
+			List<String> roleNames = new ArrayList<String>();
+			roleNames.add(RoleName.SYSTEMADMINISTRATOR);
+			roleNames.add(RoleName.JOURNALEDITORIALDEPARTMENT);
+			roleNames.add(RoleName.NATIONALDATAMANAGER);
+			if (UserUtil.haveAnyOfRoles(curr_user, roleNames)) {
+				// 2.2期刊状态验证，为提交和评审通过的期刊可以修改；未提交的期刊可以删除
+				for (Record journal : journals) {
+					String journalReviewStatus = journal
+							.getStr("review_status");
+					journal.set(
+							"canModify",
+							(journalReviewStatus
+									.equals(JournalStatus.UNSUBMITTED) || journalReviewStatus
+									.equals(JournalStatus.APPROVEDBYRJSC)) ? true
+									: false).set(
+							"canDelete",
+							journalReviewStatus
+									.equals(JournalStatus.UNSUBMITTED) ? true
+									: false);
+				}
+			} else {
+				for (Record journal : journals) {
+					journal.set("canModify", false).set("canDelete", false);
+				}
+			}
+
+			// 3.判断期刊是否可以进行国家级评审和国际级评审
+			for (Record journal : journals) {
+				String journalReviewStatus = journal.getStr("review_status");
+				int journalId = journal.getInt("JournalId");
+				// 3.1.1提交至NJSC和NJSC评审中的期刊可以进行国家级评审
+				if (journalReviewStatus.equals(JournalStatus.SUBMITTEDTONJSC)
+						|| journalReviewStatus
+								.equals(JournalStatus.REVIEWEDBYNJSC)) {
+					// 3.1.2国家期刊评委和国家期刊评委主席可以进行国家级评审
+					List<String> roleNames2 = new ArrayList<String>();
+					roleNames2.add(RoleName.NATIONALJOURNALREVIEWEXPERT);
+					roleNames2
+							.add(RoleName.CHAIRMANOFNATIONALJOURNALREVIEWCOMMITTEE);
+					if (UserUtil.haveAnyOfRoles(curr_user, roleNames2)) {
+						// 3.1.3没有进行过国家级评审投票的可以评审
+						Record vote = Db
+								.findFirst("select * from Wprim_Vote where user_id = "
+										+ userId
+										+ " and journal_id = "
+										+ journalId + " and type = 'national'");
+						journal.set("canNationalReview", vote == null ? true
+								: false);
+						journal.set("haveNationalVote", true);
+					} else {
+						journal.set("haveNationalVote", false);
+					}
+				} else {
+					// 3.2.1提交至RJSC和RJSC评审中的期刊可以进行国际级评审
+					if (journalReviewStatus
+							.equals(JournalStatus.SUBMITTEDTORJSC)
+							|| journalReviewStatus
+									.equals(JournalStatus.REVIEWEDBYRJSC)) {
+						// 3.2.2国际期刊评委和国际期刊评委主席可以进行国际级评审
+						List<String> roleNames3 = new ArrayList<String>();
+						roleNames3.add(RoleName.REGIONALJOURNALREVIEWEXPERT);
+						roleNames3
+								.add(RoleName.CHAIRMANOFREGIONALJOURNALREVIEWCOMMITTEE);
+						if (UserUtil.haveAnyOfRoles(curr_user, roleNames3)) {
+							// 3.2.3没有进行过国际级期刊评审投票的可以投票
+							Record vote = Db
+									.findFirst("select * from Wprim_Vote where user_id = "
+											+ userId
+											+ " and journal_id = "
+											+ journalId
+											+ " and type = 'regional'");
+							journal.set("canRegionalReview",
+									vote == null ? true : false);
+							journal.set("haveRegionalVote", true);
+						} else {
+							journal.set("haveRegionalVote", false);
+						}
+					}
+				}
+			}
+
+			// 4.计算每个期刊评论、赞同、反对的票数,区分国家级评审和国际级评审
+			for (Record journal : journals) {
+				int journalId = journal.getInt("JournalId");
+				journal.set(
+						"nationalRemarks",
+						Db.findFirst(
+								"select count(*) as count from Wprim_Vote where journal_id = "
+										+ journalId
+										+ " and type = 'national' and comment is not null and comment != ''")
+								.get("count"))
+						.set("nationalAgreeCount",
+								Db.findFirst(
+										"select count(*) as count from Wprim_Vote where journal_id = "
+												+ journalId
+												+ " and is_agree = 1 and type = 'national'")
+										.get("count"))
+						.set("nationalDisagreeCount",
+								Db.findFirst(
+										"select count(*) as count from Wprim_Vote where journal_id = "
+												+ journalId
+												+ " and is_agree = 0 and type = 'national'")
+										.get("count"))
+						.set("regionalRemarks",
+								Db.findFirst(
+										"select count(*) as count from Wprim_Vote where journal_id = "
+												+ journalId
+												+ " and type = 'regional' and comment is not null and comment != ''")
+										.get("count"))
+						.set("regionalAgreeCount",
+								Db.findFirst(
+										"select count(*) as count from Wprim_Vote where journal_id = "
+												+ journalId
+												+ " and is_agree = 1 and type = 'regional'")
+										.get("count"))
+						.set("regionalDisagreeCount",
+								Db.findFirst(
+										"select count(*) as count from Wprim_Vote where journal_id = "
+												+ journalId
+												+ " and is_agree = 0 and type = 'regional'")
+										.get("count"));
+			}
+
+			// 5.设置每个期刊名录提交至NJSC年份或创建年份
+			for (Record journal : journals) {
+				DateTimeFormatter dtf = DateTimeFormat
+						.forPattern("yyyy-MM-dd HH:mm:ss.SSS");
+				Record reviewLog = Db
+						.findFirst(
+								"select handle_time from Wprim_Review_Log where journal_id = ? and old_status ='"
+										+ JournalStatus.UNSUBMITTED + "'",
+								journal.getInt("JournalId"));
+				if (reviewLog != null) {
+					journal.set("year",
+							dtf.parseDateTime(reviewLog.getStr("handle_time"))
+									.getYear());
+				} else {
+					String createTime = journal.getStr("createTime");
+					if (createTime != null) {
+						journal.set("year",
+								dtf.parseDateTime(journal.getStr("createTime"))
+										.getYear());
+					} else {
+						journal.set("year", "");
+					}
+				}
+			}
+
+			// 查找每个期刊名录的Sample列展示PDF文件
+			for (Record journal : journals) {
+				List<Record> samples = Db.find(
+						"select * from WSSFILE where JournalId = ?",
+						journal.getInt("JournalId"));
+				journal.set("samples", samples);
+			}
+		}
+
+		return result;
+	}
+
+	@Override
+	public Object countPageNumberList(int pageNumber, int totalPages) {
+		// 显示页码总数
+		int count = 10;
+		pageNumber = pageNumber < 1 ? 1 : pageNumber;
+		pageNumber = pageNumber > totalPages ? totalPages : pageNumber;
+
+		if (pageNumber < ((count / 2) + (count % 2 == 0 ? 2 : 1))) {
+			List<Integer> result = new ArrayList<Integer>();
+			for (int i = 1; i <= totalPages; i++) {
+				result.add(i);
+			}
+			return result;
+		} else if (pageNumber > (totalPages - ((count / 2) + ((count % 2) == 0 ? 1
+				: 0)))) {
+			List<Integer> result = new ArrayList<Integer>();
+			for (int i = totalPages - (count - 1); i <= totalPages; i++) {
+				result.add(i);
+			}
+			return result;
+		} else {
+			if (count % 2 == 0) {
+				List<Integer> result = new ArrayList<Integer>();
+				for (int i = pageNumber - (count / 2 - 1); i < pageNumber
+						+ (count / 2 - 1); i++) {
+					result.add(i);
+				}
+				return result;
+			} else {
+				List<Integer> result = new ArrayList<Integer>();
+				for (int i = pageNumber - (count / 2); i <= pageNumber
+						+ (count / 2); i++) {
+					result.add(i);
+				}
+				return result;
+			}
+		}
+	}
+
+	@Override
+	public Object getAllReviewStatus() {
+		List<String> reviewStatus = new ArrayList<String>();
+		reviewStatus.add(JournalStatus.APPROVEDBYRJSC);
+		reviewStatus.add(JournalStatus.REJECTEDBYNJSC);
+		reviewStatus.add(JournalStatus.REJECTEDBYRJSC);
+		reviewStatus.add(JournalStatus.REVIEWEDBYNJSC);
+		reviewStatus.add(JournalStatus.REVIEWEDBYRJSC);
+		reviewStatus.add(JournalStatus.SUBMITTEDTONJSC);
+		reviewStatus.add(JournalStatus.SUBMITTEDTORJSC);
+		reviewStatus.add(JournalStatus.UNSUBMITTED);
+		return reviewStatus;
+	}
+
+	@Override
+	public Object review(Record curr_user, String actionStatus,
+			String[] journalIds) {
+		if (journalIds != null && journalIds.length != 0) {
+			// 判断当前用户是否有进行当前评审操作的权限
+			Role_ActionStatus[] roleActionStatusArray = Role_ActionStatus
+					.values();
+			List<Integer> roleIds = new ArrayList<Integer>();
+			for (Role_ActionStatus ras : roleActionStatusArray) {
+				List<String> actionStatusList = ras.getRoleActionStatus();
+				if (actionStatusList.contains(actionStatus)) {
+					roleIds.add(ras.getRoleId());
+				}
+			}
+			int errorAmount = 0;
+			int rejectedCount = 0;
+			if (UserUtil.havaAnyOfRoles(curr_user, roleIds)) {
+				// 判断每一个期刊状态是否可以进行当前评审操作
+				List<Record> journalList = new ArrayList<Record>();
+				for (String journalStrId : journalIds) {
+					journalList.add(Db.findFirst(
+							"select * from WSSJOURNAL where JournalId = ?",
+							journalStrId));
+				}
+				int failed = 0;
+				String[] oldStatus = new String[2];
+				String targetStatus = null;
+				// 处理评审操作类型，结果为原始期刊评审状态（1,2）+操作完成的期刊状态
+				if (actionStatus != null) {
+					String[] oldStatusAndtargetStatus = actionStatus.split("_");
+					if (oldStatusAndtargetStatus.length == 2) {
+						targetStatus = oldStatusAndtargetStatus[1];
+						if (oldStatusAndtargetStatus[0].contains("$")) {
+							oldStatus = oldStatusAndtargetStatus[0]
+									.split("\\$");
+						} else {
+							oldStatus[0] = oldStatusAndtargetStatus[0];
+							oldStatus[1] = oldStatusAndtargetStatus[0];
+						}
+					}
+				}
+
+				// 修改期刊状态
+				for (Record journal : journalList) {
+					String reviewStatus = journal.getStr("review_status");
+					if (reviewStatus != null) {
+						if (reviewStatus.equals(oldStatus[0])
+								|| reviewStatus.equals(oldStatus[1])) {
+							journal.set("review_status", targetStatus);
+							Db.update("WSSJOURNAL", "JournalId", journal);
+							// 添加审批操作记录（非投票评论）
+							Record reviewLog = new Record()
+									.set("user_id", curr_user.getInt("UserId"))
+									.set("journal_id",
+											journal.getInt("JournalId"))
+									.set("old_status", reviewStatus)
+									.set("new_status", targetStatus)
+									.set("handle_time",
+											new SimpleDateFormat(
+													"yyyy-MM-dd HH:mm:ss.SSS")
+													.format(new Date()));
+							Db.save("Wprim_Review_Log", reviewLog);
+							// 记录被驳回的数目
+							if (targetStatus
+									.equals(JournalStatus.REJECTEDBYNJSC)
+									|| targetStatus
+											.equals(JournalStatus.REJECTEDBYRJSC)) {
+								rejectedCount++;
+							}
+						} else {
+							// 如果被驳回的期刊名录再次请求提交到NJSC，检查驳回时间是否为当前年份之前的年份
+							if ((reviewStatus
+									.equals(JournalStatus.REJECTEDBYNJSC) || reviewStatus
+									.equals(JournalStatus.REJECTEDBYRJSC))
+									&& targetStatus
+											.equals(JournalStatus.SUBMITTEDTONJSC)) {
+								Record reviewLog = Db
+										.findFirst("select * from Wprim_Review_Log where journal_id = "
+												+ journal.getInt("JournalId")
+												+ " and new_status = '"
+												+ reviewStatus + "'");
+								if (reviewLog != null) {
+									DateTimeFormatter dtf = DateTimeFormat
+											.forPattern("yyyy-MM-dd HH:mm:ss.SSS");
+									int rejectYear = dtf.parseDateTime(
+											reviewLog.getStr("handle_time"))
+											.getYear();
+									DateTime dateTime = new DateTime();
+									int nowYear = dateTime.getYear();
+									if (rejectYear < nowYear) {
+										journal.set("review_status",
+												targetStatus);
+										Db.update("WSSJOURNAL", "JournalId",
+												journal);
+										// 添加审批操作记录（非投票评论）
+										Record reviewLog2 = new Record()
+												.set("user_id",
+														curr_user
+																.getInt("UserId"))
+												.set("journal_id",
+														journal.getInt("JournalId"))
+												.set("old_status", reviewStatus)
+												.set("new_status", targetStatus)
+												.set("handle_time",
+														new SimpleDateFormat(
+																"yyyy-MM-dd HH:mm:ss.SSS")
+																.format(new Date()));
+										Db.save("Wprim_Review_Log", reviewLog2);
+										// 记录被驳回的数目
+										if (targetStatus
+												.equals(JournalStatus.REJECTEDBYNJSC)
+												|| targetStatus
+														.equals(JournalStatus.REJECTEDBYRJSC)) {
+											rejectedCount++;
+										}
+									}
+								}
+							} else {
+								// 期刊评审状态不符合审批操作条件
+								failed++;
+							}
+						}
+					}
+				}
+				errorAmount = failed;
+			} else {
+				// 无权限
+				errorAmount = journalIds.length;
+			}
+			// 将errorAmount和rejectedCount组装在一起
+			return new Record().set("errorAmount", errorAmount).set(
+					"rejectedCount", rejectedCount);
+		}
+		return null;
+	}
+
+	@Override
+	public List<Record> findAllCountry() {
+		return Db.find("select * from Wprim_Country");
+	}
+
+	@Override
+	public void vote(Record curr_user, Integer journalId, String voteType,
+			String comment, Integer isAgree) {
+		// 再次检查当前用户投票评论权限
+		// 1.检查期刊知否可以投票评论
+		Record journal = Db.findById("WSSJOURNAL", "JournalId", journalId);
+		String review_status = journal.getStr("review_status");
+		int userId = curr_user.getInt("UserId");
+		if (voteType != null) {
+			boolean canVote = false;
+			// 国家级评审要求期刊状态为已提交至NJSC或NJSC评审中
+			if (voteType.equals("national")) {
+				if (review_status.equals(JournalStatus.SUBMITTEDTONJSC)
+						|| review_status.equals(JournalStatus.REVIEWEDBYNJSC)) {
+					canVote = true;
+				}
+				// 国际评审要求期刊状态为已提交至RJSC或RJSC评审中
+			} else if (voteType.equals("regional")) {
+				if (review_status.equals(JournalStatus.SUBMITTEDTORJSC)
+						|| review_status.equals(JournalStatus.REVIEWEDBYRJSC)) {
+					canVote = true;
+				}
+			}
+
+			if (canVote) {
+				// 2.检查当前用户是否有投票评审该期刊的权限
+				Record vote = Db
+						.findFirst(
+								"select * from Wprim_Vote where user_id = ? and journal_id = ? and type = ?",
+								userId, journalId, voteType);
+				if (vote == null) {
+					// 通过权限及期刊状态检验，进行投票评审
+					Record newVote = new Record().set("user_id", userId)
+							.set("journal_id", journalId)
+							.set("is_agree", isAgree).set("comment", comment)
+							.set("type", voteType)
+							.set("create_time", new Date().toString());
+					Db.save("Wprim_Vote", newVote);
+					// 修改期刊状态为已提交至xxx,修改为xxx评审中（NJSC/RJSC）
+					if (review_status.equals(JournalStatus.SUBMITTEDTONJSC)
+							&& voteType.equals("national")) {
+						journal.set("review_status",
+								JournalStatus.REVIEWEDBYNJSC);
+					} else if (review_status
+							.equals(JournalStatus.SUBMITTEDTORJSC)
+							&& voteType.equals("regional")) {
+						journal.set("review_status",
+								JournalStatus.REVIEWEDBYRJSC);
+					}
+					Db.update("WSSJOURNAL", "JournalId", journal);
+				} else {
+					// 如果当前用户已经参与过该期刊投票评审，修改原有内容
+					vote.set("is_agree", isAgree).set("comment", comment)
+							.set("create_time", new Date().toString());
+					Db.update("Wprim_Vote", vote);
+				}
+			}
+		}
+	}
+
+	@Override
+	public Object getVote(Record curr_user, Integer journalId, String voteType) {
+
+		return Db
+				.findFirst(
+						"select * from Wprim_Vote where user_id = ? and journal_id = ? and type = ?",
+						curr_user.getInt("UserId"), journalId, voteType);
+	}
+
+	@Override
+	public Page<Record> findAllApproved(Record curr_user, int pageNumber,
+			String journalTitle, String startWith, String newsroom,
+			String country) {
+		int pageSize = 15;
+		journalTitle = journalTitle == null ? "" : journalTitle;
+		startWith = startWith == null ? "" : startWith;
+		String lowerCaseStartWith = startWith.toLowerCase();
+		// newsroom = newsroom == null ? "" : newsroom;
+		// country = country == null ? "" : country;
+
+		// 根据角色查看不同的已评审通过期刊名录
+		// 1.系统管理员可以看到所有已评审通过期刊
+		if (curr_user != null) {
+			if (UserUtil.haveRole(curr_user, RoleName.SYSTEMADMINISTRATOR)) {
+				return Db.paginate(pageNumber, pageSize,
+						"select journalTitle,JournalId",
+						"from WSSJOURNAL where journalTitle like '%"
+								+ journalTitle + "%' and (journalTitle like '"
+								+ startWith + "%' or journalTitle like '"
+								+ lowerCaseStartWith
+								+ "%') and review_status = '"
+								+ JournalStatus.APPROVEDBYRJSC + "'");
+			} else {
+				// 2.国家数据管理员/国家联络员可以看到本国所有已评审通过的期刊名录
+				String userCountry = curr_user.getStr("Country");
+				if (UserUtil.haveRole(curr_user, RoleName.NATIONALDATAMANAGER)
+						|| UserUtil.haveRole(curr_user,
+								RoleName.NATIONALLIAISONER)) {
+					return Db.paginate(pageNumber, pageSize,
+							"select journalTitle,JournalId",
+							"from WSSJOURNAL where journalTitle like '%"
+									+ journalTitle
+									+ "%' and (journalTitle like '" + startWith
+									+ "%' or journalTitle like '"
+									+ lowerCaseStartWith
+									+ "%') and review_status = '"
+									+ JournalStatus.APPROVEDBYRJSC
+									+ "' and country = '" + userCountry + "'");
+				} else {
+					// 3.期刊编辑部可以看到本编辑部所有已评审通过的期刊名录
+					String editDep = curr_user.getStr("EditDep");
+					if (UserUtil.haveRole(curr_user,
+							RoleName.JOURNALEDITORIALDEPARTMENT)) {
+						return Db.paginate(pageNumber, pageSize,
+								"select journalTitle,JournalId",
+								"from WSSJOURNAL where journalTitle like '%"
+										+ journalTitle
+										+ "%' and (journalTitle like '"
+										+ startWith
+										+ "%' or journalTitle like '"
+										+ lowerCaseStartWith
+										+ "%') and review_status = '"
+										+ JournalStatus.APPROVEDBYRJSC
+										+ "' and country = '" + userCountry
+										+ "' and edit_department = '" + editDep
+										+ "'");
+					}
+				}
+			}
+		}
+		return null;
+		/*
+		 * return Db.paginate( pageNumber, pageSize,
+		 * "select journalTitle,JournalId",
+		 * "from WSSJOURNAL where journalTitle like '%" + journalTitle +
+		 * "%' and (journalTitle like '" + startWith +
+		 * "%' or journalTitle like '" + lowerCaseStartWith +
+		 * "%') and (edit_department like '%" + newsroom +
+		 * "%' or edit_department is null) and (country like '%" + country +
+		 * "%' or country is null) and review_status = 'approved by RJSC'");
+		 */
+
+	}
+
+	@Override
+	public boolean canCreateNewJournal(Record curr_user) {
+		// 系统管理员，期刊编辑部，国家联络员，国家数据管理员可以创建期刊
+		List<String> roleNames = new ArrayList<String>();
+		roleNames.add(RoleName.SYSTEMADMINISTRATOR);
+		roleNames.add(RoleName.JOURNALEDITORIALDEPARTMENT);
+		roleNames.add(RoleName.NATIONALLIAISONER);
+		roleNames.add(RoleName.NATIONALDATAMANAGER);
+		return UserUtil.haveAnyOfRoles(curr_user, roleNames);
+	}
+
+	@Override
+	public Object setNewsroom(Record curr_user) {
+		if (UserUtil.haveRole(curr_user, RoleName.JOURNALEDITORIALDEPARTMENT)
+				&& !UserUtil.haveRole(curr_user, RoleName.NATIONALDATAMANAGER)) {
+			return curr_user.getStr("EditDep");
+		}
+		return null;
+	}
+
+	@Override
+	public Object setCountry(Record curr_user) {
+		if (UserUtil.haveRole(curr_user, RoleName.NATIONALDATAMANAGER)) {
+			return curr_user.getStr("Country");
+		}
+		return null;
+	}
+
+	@Override
+	public Object findJournalById(int journalId) {
+		return Db.findById("WSSJOURNAL", "JournalId", journalId);
+	}
+
+	@Override
+	public Object findJournalVolumeListOrderByPubYearByJournalId(int journalId) {
+		List<Record> yearRecordList = Db
+				.find("select distinct PubYear from WSSJOURNALVOLUME where JID = ? order by PubYear",
+						journalId);
+		List<Record> result = new ArrayList<Record>();
+		if (yearRecordList != null && yearRecordList.size() != 0) {
+			for (Record yearRecord : yearRecordList) {
+				int pubYear = yearRecord.getInt("PubYear");
+				List<Record> journalVolumeList = Db
+						.find("select * from WSSJOURNALVOLUME where JID = ? and PubYear = ?",
+								journalId, pubYear);
+				result.add(new Record().set("pubYear", pubYear).set(
+						"journalVolumeList", journalVolumeList));
+			}
+		}
+		return result;
+	}
+
+	@Override
+	public Object findJournalByJournalVolumeId(int journalVolumeId) {
+		Record journalVolume = Db.findById("WSSJOURNALVOLUME", "VolumeID",
+				journalVolumeId);
+		if (journalVolume != null) {
+			return Db.findFirst("select * from WSSJOURNAL where JournalId = ?",
+					journalVolume.getInt("JID"));
+		}
+		return null;
+	}
+
+	@Override
+	public void modify(String journalTitle, String VernacularJournalTitle,
+			String country, String publisher, String EditorInChief,
+			String EditorEmail, String Abbreviation, String StartYear,
+			String start_volume, String start_issue, UploadFile fileCover,
+			String Description, String OfficeAddress, String TelephoneNumber,
+			String WebSite, String IssuesNumber, String EditorsNumber,
+			String ReviewersNumber, String InternationReviewersNumber,
+			String ReceivedRatioNumber, String EachPaper,
+			String PublishedRatioNumber, String[] OtherKu, String AccessStatus,
+			String FeePapers, UploadFile fileCountrySimple, String ISSN,
+			String EISSN, String CN, int JournalId) {
+		String str = "";
+
+		for (int i = 0; i < OtherKu.length; i++) {
+
+			str += OtherKu[i] + ",";
+		}
+		Db.update(
+				"update WSSJOURNAL set  journalTitle=?,VernacularJournalTitle=?,  country=?,publisher=?, EditorInChief=?, EditorEmail=?,Abbreviation=?, StartYear=?,  start_volume=?,start_issue=?, coverPath=?, Description=?,OfficeAddress=?, TelephoneNumber=?,WebSite=?,  IssuesNumber=?,  EditorsNumber=?,ReviewersNumber=?,  InternationReviewersNumber=?,ReceivedRatioNumber=?,EachPaper=?,PublishedRatioNumber=?,  OtherKu=?,  AccessStatus=?,FeePapers=?, filePath=?,ISSN=?,EISSN=?,CN=? where JournalId=?",
+				VernacularJournalTitle, country, publisher, EditorInChief,
+				EditorEmail, Abbreviation, StartYear, start_volume,
+				start_issue, "/picture/" + fileCover.getFileName(),
+				Description, OfficeAddress, TelephoneNumber, WebSite,
+				IssuesNumber, EditorsNumber, ReviewersNumber,
+				InternationReviewersNumber, ReceivedRatioNumber, EachPaper,
+				PublishedRatioNumber, str.substring(0, OtherKu.length - 1),
+				AccessStatus, FeePapers,
+				"/file/" + fileCountrySimple.getFileName(), ISSN, EISSN, CN,
+				JournalId);
+
+	}
+
+	// 新增期刊名录
+	public void addJournal(Journal journal, String[] OtherKu, String ISSN,
+			String EISSN, String CN) {
+
+		String str = "";
+
+		for (int i = 0; i < OtherKu.length; i++) {
+
+			str += OtherKu[i] + ",";
+		}
+		journal.set("OtherKu", str.substring(0, OtherKu.length - 1));
+		journal.set("ISSN", ISSN);
+		journal.set("EISSN", EISSN);
+		journal.set("CN", CN);
+		journal.save();
+	}
+
+	// 更新
+	@Override
+	public void update(Journal journal, String[] OtherKu, String ISSN,
+			String EISSN, String CN) {
+		String str = "";
+
+		for (int i = 0; i < OtherKu.length; i++) {
+
+			str += OtherKu[i] + ",";
+		}
+		journal.set("OtherKu", str.substring(0, OtherKu.length - 1));
+		journal.set("ISSN", ISSN);
+		journal.set("EISSN", EISSN);
+		journal.set("CN", CN);
+		journal.update();
+	}
+
+	private Record generatePage(Set<Integer> set, int pageSize,
+			int intPageNumber, String year) {
+		// 最终结果(包括：遍历结果集list,当前页pageNumber,总页数totalPage,总结果数totalRow,分页大小pageSize)
+		Record record = new Record();
+
+		// 数据预处理
+		int totalRow = set.size();
+
+		// 总结果数
+		record.set("totalRow", totalRow);
+		// 分页大小
+		record.set("pageSize", pageSize);
+		// 当前页
+		record.set("pageNumber", intPageNumber);
+		// 总页数
+		record.set("totalPage", (totalRow / pageSize)
+				+ ((totalRow % pageSize == 0) ? 0 : 1));
+
+		// 查询结果集
+		if (totalRow != 0) {
+			List<Integer> journalIds = new ArrayList<Integer>(set);
+			Collections.sort(journalIds);
+			int begin = (intPageNumber - 1) * pageSize;
+			int end = 0;
+			if (intPageNumber != record.getInt("totalPage")) {
+				end = begin + pageSize - 1;
+			} else {
+				end = record.getInt("totalRow");
+			}
+			List<Integer> resutlJournalIs = journalIds.subList(begin, end);
+			String idStr = "";
+			int size = resutlJournalIs.size();
+			if (size != 0) {
+				for (int i = 0; i < size; i++) {
+					idStr += resutlJournalIs.get(i)
+							+ ((i == (size - 1)) ? "" : ",");
+				}
+				List<Record> journals = Db
+						.find("select * from WSSJOURNAL where JournalId in ("
+								+ idStr + ")");
+				if (year == null || year.trim().equals("")) {
+					record.set("list", journals);
+				} else {
+					// 按照年份过滤结果
+					DateTimeFormatter dtf = DateTimeFormat
+							.forPattern("yyyy-MM-dd HH:mm:ss.SSS");
+					Iterator<Record> it = journals.iterator();
+					while (it.hasNext()) {
+						Record journal = it.next();
+						Record reviewLog = Db
+								.findFirst(
+										"select handle_time from Wprim_Review_Log where journal_id = ? and old_status = '"
+												+ JournalStatus.UNSUBMITTED
+												+ "'",
+										journal.getInt("JournalId"));
+						if (reviewLog != null) {
+							if (!year
+									.equals(String.valueOf(dtf.parseDateTime(
+											reviewLog.getStr("handle_time"))
+											.getYear()))) {
+								it.remove();
+							}
+						} else {
+							String createTime = journal.getStr("createTime");
+							if (createTime != null) {
+								if (!year.equals(String.valueOf(dtf
+										.parseDateTime(createTime).getYear()))) {
+									it.remove();
+								}
+							} else {
+								it.remove();
+							}
+						}
+					}
+					record.set("list", journals);
+				}
+			}
+		}
+
+		return record;
+	}
+
+	@Override
+	public Object judgeShowColumns(Record curr_user) {
+		// 预先设置判断属性名称
+		String showNJSCReview = "showNJSCReview";
+		String showRJSCReview = "showRJSCReview";
+		String showOperate = "showOperate";
+
+		Record record = new Record();
+		// 未登录用户所有判断列都不显示
+		if (curr_user == null) {
+			record.set(showOperate, false);
+			record.set(showRJSCReview, false);
+			record.set(showNJSCReview, false);
+			return record;
+		}
+
+		// 逐个判断是否显示
+		// 1.判断NJSC评审列，非NJSC评审/主席隐藏
+		if (!UserUtil.haveRole(curr_user, RoleName.NATIONALJOURNALREVIEWEXPERT)
+				&& !UserUtil.haveRole(curr_user,
+						RoleName.CHAIRMANOFNATIONALJOURNALREVIEWCOMMITTEE)) {
+			record.set(showNJSCReview, false);
+		} else {
+			record.set(showNJSCReview, true);
+		}
+		// 2.判断RJSC评审列，非RJSC评审/主席隐藏
+		if (!UserUtil.haveRole(curr_user, RoleName.REGIONALJOURNALREVIEWEXPERT)
+				&& !UserUtil.haveRole(curr_user,
+						RoleName.CHAIRMANOFREGIONALJOURNALREVIEWCOMMITTEE)) {
+			record.set(showRJSCReview, false);
+		} else {
+			record.set(showRJSCReview, true);
+		}
+		// 3.判断操作列，非期刊编辑部，国家数据管理员/联络员，系统管理员隐藏
+		List<String> roleNames = new ArrayList<String>();
+		roleNames.add(RoleName.JOURNALEDITORIALDEPARTMENT);
+		roleNames.add(RoleName.NATIONALDATAMANAGER);
+		roleNames.add(RoleName.NATIONALLIAISONER);
+		roleNames.add(RoleName.SYSTEMADMINISTRATOR);
+		if (UserUtil.dontHaveAnyOfRoles(curr_user, roleNames)) {
+			record.set(showOperate, false);
+		} else {
+			record.set(showOperate, true);
+		}
+
+		return record;
+	}
+
+	// 期刊保存
+	@Override
+	public void saveVolume(Record curr_user, String Crtime, String PubDate,
+			String JID, String Issue, String Volume) {
+		int PubYear = Integer.valueOf(PubDate.split("-")[0]);
+		String PubMonth = PubDate.split("-")[1];
+		String PubDay = PubDate.split("-")[2].substring(0, 2);
+		JournalVolume journalVolume = new JournalVolume()
+				.set("cruser", curr_user.get("UserName")).set("crtime", Crtime)
+				.set("PubDate", PubDate).set("JID", JID).set("Issue", Issue)
+				.set("Volume", Volume).set("PubYear", PubYear)
+				.set("PubMonth", PubMonth).set("PubDay", PubDay);
+
+		journalVolume.save();
+
+	}
+
+	@Override
+	public Object findAllAvailableYears() {
+		List<Integer> years = new ArrayList<Integer>();
+		DateTimeFormatter dtf = DateTimeFormat
+				.forPattern("yyyy-MM-dd HH:mm:ss.SSS");
+		// 评审记录中提交到NJSC的所有年份
+		List<Record> reviewLogs = Db
+				.find("select handle_time from Wprim_Review_Log where old_status = '"
+						+ JournalStatus.UNSUBMITTED + "'");
+		if (reviewLogs != null && reviewLogs.size() != 0) {
+			for (Record r : reviewLogs) {
+				String handleTime = r.getStr("handle_time");
+				DateTime dateTime = dtf.parseDateTime(handleTime);
+				years.add(dateTime.getYear());
+			}
+		}
+		// 期刊名录的所有
+		List<Record> journals = Db.find("select createTime from WSSJOURNAL");
+		if (journals != null && journals.size() != 0) {
+			for (Record r : journals) {
+				String createTime = r.getStr("createTime");
+				if (createTime != null) {
+					DateTime dateTime = dtf.parseDateTime(createTime);
+					years.add(dateTime.getYear());
+				}
+			}
+		}
+		// 去重
+		Set<Integer> set = new HashSet<Integer>(years);
+		return set;
+	}
+
+	// 根据用户,判断用户权限
+	@Override
+	public Map<String, Object> createJournal(Record curr_user) {
+		List<String> roleNames = new ArrayList<String>();
+		roleNames.add(RoleName.SYSTEMADMINISTRATOR);
+		roleNames.add(RoleName.JOURNALEDITORIALDEPARTMENT);
+		roleNames.add(RoleName.NATIONALLIAISONER);
+		roleNames.add(RoleName.NATIONALDATAMANAGER);
+		// 返回数据
+		Map<String, Object> map = new HashMap<String, Object>();
+		// 判断用户是否有此角色
+		if (UserUtil.haveAnyOfRoles(curr_user, roleNames)) {
+			// 判断用户是否是超级管理员
+			if (UserUtil.haveRole(curr_user, RoleName.SYSTEMADMINISTRATOR)) {
+				// 可以创建所有国家的期刊
+				map.put("CountryList", Db.find("select * from Wprim_Country"));
+			} else {
+				// 只能创建本国期刊
+				Record CountryId = Db.findFirst(
+						"select CountryId from Wprim_User where UserId = ?",
+						curr_user.get("UserId"));
+
+				map.put("CountryList", Db.find(
+						"select * from Wprim_Country where Id = ?",
+						CountryId.getInt("CountryId")));
+			}
+			// 判断是否是期刊编辑部
+			if (UserUtil.haveRole(curr_user,
+					RoleName.JOURNALEDITORIALDEPARTMENT)) {
+
+				map.put("EditDep", Db.findFirst(
+						"select EditDep from Wprim_User where UserId = ?",
+						curr_user.get("UserId")));
+
+			}
+
+		}
+		return map;
+	}
+
+	// 期刊查询
+	@Override
+	public Record queryJournalVolume(int id, Record curr_user) {
+		// TODO Auto-generated method stub
+		List<String> roleNames = new ArrayList<String>();
+		roleNames.add(RoleName.SYSTEMADMINISTRATOR);
+		roleNames.add(RoleName.JOURNALEDITORIALDEPARTMENT);
+		roleNames.add(RoleName.NATIONALDATAMANAGER);
+		roleNames.add(RoleName.NATIONALLIAISONER);
+		// 查询用户信息
+		Record user=Db.findFirst("select * from Wprim_User where UserId = ?",curr_user.getInt("UserId"));
+		// 如果是系统管理员,可以修改所有的期刊
+		if (UserUtil.haveRole(curr_user, RoleName.SYSTEMADMINISTRATOR)) {
+
+			return Db.findFirst(
+					"select * from WSSJOURNALVOLUME where VolumeID = ?", id);
+		}
+		// 如果是国家联络员/数据管理员,只可以查看本国的期刊名录
+		else if (UserUtil.haveRole(curr_user, RoleName.NATIONALDATAMANAGER)
+				|| UserUtil.haveRole(curr_user, RoleName.NATIONALLIAISONER)) {
+			//根据期刊ID查找对应的期刊名录JID
+		  Record journalVolume= Db.findFirst("select * from WSSJOURNALVOLUME where VolumeID = ? ",id);
+		 	//根据期刊ID查找期刊名录
+		  Record journal=Db.findFirst("select * from WSSJOURNAL where JournalId = ?", journalVolume.getInt("JID"));
+		  //查找本国的期刊
+		  if(journal.getStr("country").equals(user.getStr("Country"))){
+			  
+			  return Db.findFirst("select * from WSSJOURNALVOLUME where VolumeID=?",id);
+		  }
+		}
+		  // 如果是期刊编辑部,只能编辑本编辑的期刊
+		  else if(UserUtil.haveRole(curr_user, RoleName.JOURNALEDITORIALDEPARTMENT)){
+			  
+			  //根据期刊ID查找对应的期刊名录JID
+			  Record journalVolume= Db.findFirst("select * from WSSJOURNALVOLUME where VolumeID = ? ",id);
+			  //根据期刊ID查找期刊名录
+			  Record journal=Db.findFirst("select * from WSSJOURNAL where JournalId = ?", journalVolume.getInt("JID"));
+			  //查找本编辑本期刊
+			  if(journal != null&& journal.getStr("country").equals(curr_user.get("Country"))&& journal.getStr("edit_department")
+								.equals(curr_user.get("EditDep"))) {
+				  return Db.findFirst("select * from WSSJOURNALVOLUME where VolumeID=?",id);
+			}
+			 
+		}
+
+		return null;
+
+	}
+
+	@Override
+	public void deleteJournalVolume(Integer journalVolumeId, Record curr_user) {
+		// 检查用户角色后删除期刊
+		// 1.系统管理员可以删除所有期刊
+		if (UserUtil.haveRole(curr_user, RoleName.SYSTEMADMINISTRATOR)) {
+			Db.deleteById("WSSJOURNALVOLUME", "VolumeID", journalVolumeId);
+		} else {
+			// 2.国家数据管理员/国家联络员可以删除本国的期刊
+			String userCountry = curr_user.getStr("Country");
+			if (UserUtil.haveRole(curr_user, RoleName.NATIONALDATAMANAGER)
+					|| UserUtil.haveRole(curr_user, RoleName.NATIONALLIAISONER)) {
+				Record journalVolume = Db.findById("WSSJOURNALVOLUME",
+						"VolumeID", journalVolumeId);
+				Record journal = Db.findById("WSSJOURNAL", "JournalId",
+						journalVolume.getInt("JID"));
+				if (journal != null
+						&& journal.getStr("country").equals(userCountry)) {
+					Db.deleteById("WSSJOURNALVOLUME", "VolumeID",
+							journalVolumeId);
+				}
+			} else {
+				// 3.期刊编辑部可以删除本期刊编辑部的期刊
+				String editDep = curr_user.getStr("EditDep");
+				if (UserUtil.haveRole(curr_user,
+						RoleName.JOURNALEDITORIALDEPARTMENT)) {
+					Record journalVolume = Db.findById("WSSJOURNALVOLUME",
+							"VolumeID", journalVolumeId);
+					Record journal = Db.findById("WSSJOURNAL", "JournalId",
+							journalVolume.getInt("JID"));
+					if (journal != null
+							&& journal.getStr("country").equals(userCountry)
+							&& journal.getStr("edit_department")
+									.equals(editDep)) {
+						Db.deleteById("WSSJOURNALVOLUME", "VolumeID",
+								journalVolumeId);
+					}
+				}
+			}
+		}
+	}
+}

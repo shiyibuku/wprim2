@@ -1,0 +1,311 @@
+package com.ninemax.controller;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import com.jfinal.core.Controller;
+import com.jfinal.kit.PathKit;
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Page;
+import com.jfinal.plugin.activerecord.Record;
+import com.jfinal.upload.UploadFile;
+import com.ninemax.model.Journal;
+import com.ninemax.model.JournalVolume;
+import com.ninemax.service.IJournalService;
+import com.ninemax.service.IUserService;
+import com.ninemax.service.impl.IJournalServiceImpl;
+import com.ninemax.service.impl.UserServiceImpl;
+import com.ninemax.util.ActionStatus;
+import com.ninemax.util.PageNumberUtil;
+
+public class JournalController extends Controller {
+
+	private IJournalService journalService = new IJournalServiceImpl();
+	private IUserService userService = new UserServiceImpl();
+
+	//投票评论预览
+	public void previewVote(){
+		setAttr("voteList", journalService.previewVote(getParaToInt("journalId"),getPara("type"),getParaToInt("isAgree")));
+		render("/journal/journal_vote_preview.jsp");
+	}
+	
+	// 删除期刊
+	public void deleteJournalVolume() {
+		journalService.deleteJournalVolume(getParaToInt("journalVolumeId"),
+				(Record) getSessionAttr("curr_user"));
+		setAttr("data", true);
+		renderJson();
+	}
+
+	// 已审批通过的期刊名录详细页
+	public void journalDetail() {
+		int journalId = getParaToInt("journalId");
+		setAttr("journal", journalService.findJournalById(journalId));
+		setAttr("journalVolumeListOrderByPubYear",
+				journalService
+						.findJournalVolumeListOrderByPubYearByJournalId(journalId));
+		render("/journal/journal_detail.jsp");
+	}
+
+	// 检查当前用户是否有创建期刊名录的权限
+	public void canCreateNewJournal() {
+		setAttr("canCreateNewJournal",
+				journalService
+						.canCreateNewJournal((Record) getSessionAttr("curr_user")));
+		renderJson();
+	}
+
+	// 删除期刊名录
+	public void deleteJournal() {
+		journalService.delete(getParaToInt("journalId"),
+				(Record) getSessionAttr("curr_user"));
+		setAttr("data", true);
+		renderJson();
+	}
+
+	// 浏览评审通过的期刊名录
+	public void website() {
+		String startWith = getPara("startWith");
+		Record curr_user = getSessionAttr("curr_user");
+		if (curr_user == null) {
+			render("/index.jsp");
+		} else {
+			Page<Record> journalList = journalService.findAllApproved(
+					curr_user,
+					PageNumberUtil.handlePageNumber(getPara("pageNumber")),
+					getPara("journalTitle"), startWith, getPara("newsroom"),
+					getPara("country"));
+			setAttr("journalList", journalList);
+			setAttr("pageNumberList",
+					journalService.countPageNumberList(
+							journalList.getPageNumber(),
+							journalList.getTotalPage()));
+			// setAttr("newsroom", journalService.setNewsroom(curr_user));
+			// setAttr("country", journalService.setCountry(curr_user));
+			if (startWith == null || startWith.trim().equals("")) {
+				startWith = "Anything";
+			}
+			setAttr("startWith", startWith);
+			render("/journal/journal_approved.jsp");
+		}
+	}
+
+	// 获取投票评审内容
+	public void getVote() {
+		setAttr("vote", journalService.getVote(
+				(Record) getSessionAttr("curr_user"),
+				getParaToInt("journalId"), getPara("voteType")));
+		renderJson();
+	}
+
+	// 投票评论评审
+	public void vote() {
+		journalService.vote((Record) getSessionAttr("curr_user"),
+				getParaToInt("journalId"), getPara("voteType"),
+				getPara("comment"), getParaToInt("isAgree"));
+		redirect("/admin/journal/findAll");
+	}
+
+	// 评审操作
+	public void review() {
+		String actionStatus = getPara("actionStatus");
+		Record curr_user = getSessionAttr("curr_user");
+		String[] journalIds = getRequest().getParameterValues("journalIds");
+		Record firstResult = (Record) journalService.review(curr_user,
+				actionStatus, journalIds);
+		setAttr("result", firstResult);
+		if (actionStatus.equals(ActionStatus.NJSC_REJECTED)) {
+			actionStatus = ActionStatus.RJSC_REJECTED;
+			Record secondResult = (Record) journalService.review(curr_user,
+					actionStatus, journalIds);
+			secondResult.set("errorAmount",
+					journalIds.length - firstResult.getInt("rejectCount")
+							- secondResult.getInt("rejectCount"));
+			setAttr("result", secondResult);
+		}
+		redirect("/admin/journal/findAll", true);
+	}
+
+	// 期刊名录查询
+	@SuppressWarnings("unchecked")
+	public void findAll() {
+		String pageNumber = getPara("pageNumber");
+		Record curr_user = getSessionAttr("curr_user");
+		Record journalList = (Record) journalService.search(curr_user,
+				PageNumberUtil.availablePageNumber(pageNumber),
+				getPara("journalTitle"), getPara("country"),
+				getPara("reviewStatus"), getPara("year"));
+		// 设置结果集
+		setAttr("journalList", journalList);
+		// 设置页码集
+		setAttr("pageNumberList", journalService.countPageNumberList(
+				PageNumberUtil.handlePageNumber(pageNumber),
+				journalList.getInt("totalPage")));
+		// 设置所有可选国家和期刊状态
+		setAttr("countryList", userService.findAllCountry());
+		setAttr("reviewStatusList", journalService.getAllReviewStatus());
+		// 设置隐藏列
+		setAttr("showColumns", journalService.judgeShowColumns(curr_user));
+		// 设置所有可选年份
+		setAttr("yearList", journalService.findAllAvailableYears());
+		//设置期刊评审按钮是否显示
+		setAttr("showReviewButtons", journalService.judgeShowReviewButtons(curr_user,(List<Record>)journalList.get("list")));
+		render("/journal/journal_home.jsp");
+	}
+
+	// 跳转到期刊名录创建
+	public void createJournal() {
+		// 获取用户信息
+		Record curr_user = getSessionAttr("curr_user");
+		// 权限判断
+		Map<String, Object> map = journalService.createJournal(curr_user);
+		// 设置页面参数
+		setAttr("countryList", map.get("CountryList"));
+		setAttr("EditDep", map.get("EditDep"));
+		render("/journal/createjournal.jsp");
+
+	}
+
+	// 期刊名录保存
+	public void saveJournal() throws Exception {
+		// 上传图片到指定路径
+		UploadFile picture = getFile("cover", PathKit.getWebRootPath()+ "/upload/pictureFile/");
+		// 上传文件到指定路径
+		UploadFile journalFile = getFile("CountrySimple",PathKit.getWebRootPath() + "/upload/journalFile/");
+			// 如果文件存在
+			journalService.save(getPara("journalTitle"),
+					getPara("VernacularJournalTitle"), getPara("country"),
+					getPara("publisher"), getPara("ISSN1"), getPara("ISSN2"),
+					getPara("EISSN1"), getPara("EISSN2"), getPara("CN1"),
+					getPara("CN2"), getPara("EditorInChief"),
+					getPara("EditorEmail"), getPara("Abbreviation"),
+					getPara("StartYear"), getPara("start_volume"),
+					getPara("start_issue"), picture, getPara("Description"),
+					getPara("OfficeAddress"), getPara("TelephoneNumber"),
+					getPara("WebSite"), getPara("IssuesNumber"),
+					getPara("EditorsNumber"), getPara("ReviewersNumber"),
+					getPara("InternationReviewersNumber"),
+					getPara("ReceivedRatioNumber"), getPara("EachPaper"),
+					getPara("PublishedRatioNumber"), getRequest()
+							.getParameterValues("OtherKu"),
+					getPara("AccessStatus"), getPara("FeePapers"), journalFile,
+					(Record) getSessionAttr("curr_user"), getPara("saveButton"),
+					getPara("edit_department"), getPara("Language"),
+					getPara("Sponsor"));
+			// 添加文件信息向数据库WSSFILE
+			Record record = Db.findFirst(
+					"select * from WSSJOURNAL where journalTitle=? ",
+					getPara("journalTitle"));
+			Db.update(
+					"update WSSFILE set fileName=?,filePath=?,fileSize=?,JournalId=?",
+					getFile("CountrySimple").getFileName(), "/upload/file/"
+							+ getFile("CountrySimple").getFileName(),
+					getFile("CountrySimple").getFile().length(),
+					record.get("JournalId"));
+			redirect("/admin/journal/findAll", true);
+		
+	}
+
+	// 查询某一期刊名录
+	public void queryJournal() {
+		//查询用户信息
+		Record journal = journalService.queryJournal(getParaToInt("JournalId"),
+				(Record) getSessionAttr("curr_user"));
+		//查询国家
+		List<Record> countryList =Db.find("select * from Wprim_Country");
+		//跳转页面
+		setAttr("journal", journal);
+		setAttr("countryList",countryList);
+		render("/journal/updatejournal.jsp");
+	}
+
+	// 更新期刊名录信息
+	public void updateJournal() {
+
+		UploadFile fileCover = getFile("cover");
+
+		UploadFile fileCountrySimple = getFile("CountrySimple");
+
+		// 查询期刊名录数据库
+		Record record = journalService.queryJournal(
+				getParaToInt("journal.JournalId"),
+				(Record) getSessionAttr("curr_user"));
+
+		Journal journal = getModel(Journal.class);
+
+		// 判断是否上传文件,如果上传?重新赋值:提交隐藏域的值
+		if (fileCover != null) {
+
+			journal.set("cover", "/picture/" + fileCover.getFileName());
+
+		}
+		if (fileCountrySimple != null) {
+
+			journal.set("CountrySimple",
+					"/file/" + fileCountrySimple.getFileName());
+
+		}
+		// 重新插入記錄(如果修改journalTitle,ISSN,EISSN)
+		if (!record.getStr("journalTitle").equals(
+				getPara("journal.journalTitle"))
+				|| !record.getStr("ISSN").equals(
+						(getPara("ISSN1") + "-" + getPara("ISSN2")))
+				|| !record.getStr("EISSN").endsWith(
+						(getPara("EISSN1") + "-" + getPara("EISSN2")))) {
+			// 新增期刊名录
+			journalService.addJournal(journal,
+					getRequest().getParameterValues("journal.OtherKu"),
+					getPara("ISSN1") + "-" + getPara("ISSN2"),
+					getPara("EISSN1") + "-" + getPara("EISSN2"), getPara("CN1")
+							+ "-" + getPara("CN2"));
+
+		} else {
+			// 更新期刊名录
+			journalService.update(journal,
+					getRequest().getParameterValues("journal.OtherKu"),
+					getPara("ISSN1") + "-" + getPara("ISSN2"),
+					getPara("EISSN1") + "-" + getPara("EISSN2"), getPara("CN1")
+							+ "-" + getPara("CN2"));
+		}
+		redirect("/admin/journal/findAll", true);
+	}
+
+	// 跳转到期刊创建
+	public void createJournalVolume() {
+
+		render("/journal/createJournalVolume.jsp");
+	}
+
+	// 期刊保存
+	public void saveJournalVolume() {
+		// 转换日期格式
+		SimpleDateFormat df = new SimpleDateFormat("yy-MM-dd HH:ss:mm.SSS");
+
+		journalService.saveVolume((Record) getSessionAttr("curr_user"),
+				df.format(new Date()), df.format(getParaToDate("PubDate")),
+				getPara("JID"), getPara("Volume"), getPara("Issue"));
+		redirect("/admin/journal/journalDetail");
+	}
+
+	// 跳转到期刊修改页面
+	public void queryJournalVolume() {
+
+		Record curr_user = getSessionAttr("curr_user");
+		// 查询期刊信息
+		Record journalVolume = journalService.queryJournalVolume(
+				getParaToInt("VolumeId"), curr_user);
+		// 修改跳转到修改页面
+		setAttr("journalVolume", journalVolume);
+		render("/journal/updateJournalVolume");
+	}
+
+	// 期刊修改
+	public void updateJournalVolume() {
+
+		JournalVolume journalVolume = getModel(JournalVolume.class);
+
+		journalVolume.save();
+	}
+}

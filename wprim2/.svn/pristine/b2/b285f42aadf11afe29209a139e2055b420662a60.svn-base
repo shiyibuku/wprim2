@@ -1,0 +1,10 @@
+package com.ninemax.service;
+
+import com.jfinal.plugin.activerecord.Record;
+import com.jfinal.upload.UploadFile;
+
+public interface IArticleService {
+
+	Object importXml(UploadFile xmlFile, Record curr_user);
+
+}

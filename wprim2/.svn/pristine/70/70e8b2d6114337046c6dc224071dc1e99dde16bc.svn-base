@@ -1,0 +1,9 @@
+package com.ninemax.model;
+
+import com.jfinal.plugin.activerecord.Model;
+
+public class User extends Model<User>{
+	
+	public static User userDao = new User();
+
+}

@@ -1,0 +1,55 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<jsp:include page="/include/nav.jsp"></jsp:include>
+	<div class="page-content-wrapper">
+		<div class="page-content">
+			<div class="page-bar">
+				<ul class="page-breadcrumb">
+					<li>
+						<i class="fa fa-home"></i>
+						<a href="admin/user/home">Home</a>
+						<i class="fa fa-angle-right"></i>
+					</li>
+					<li>
+						<a href="admin/user/index">User Mangement</a>
+						<i class="fa fa-angle-right"></i>
+					</li>
+					<li>
+						<a href="admin/user/new">New User</a>
+					</li>
+				</ul>
+			</div>
+			<div>
+				<form action="admin/user/save">
+					<label>UserName:</label>
+					<input type="text" name="username"><br>
+					<label>Password:</label>
+					<input type="password" name="password"><br>
+					<label>Country:</label>
+					<select name="country">
+						<option value="#">Please Select Country</option>
+						<c:forEach items="${countryList }" var="country">
+							<option value="${country.CountryName }">${country.CountryName }</option>
+						</c:forEach>
+					</select><br>
+					<label>EditDep:</label>
+					<input type="text" name="editDep"><br>
+					<label>Address:</label>
+					<input type="text" name="address"><br>
+					<label>Phone:</label>
+					<input type="text" name="phone"><br>
+					<label>Fax:</label>
+					<input type="text" name="fax"><br>
+					<label>Email:</label>
+					<input type="email" name="email">
+					
+					<button>Submit</button>
+				</form>
+			</div>
+		</div>
+	</div>
+</div>
+
+<jsp:include page="/include/normalJS.jsp"></jsp:include>
+</body>
+</html>
